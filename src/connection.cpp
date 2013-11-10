@@ -148,6 +148,28 @@ namespace tnet
         }
     }
 
+    void Connection::handleConnect()
+    {
+        if(m_status != Connected)
+        {
+            return;    
+        }   
+        
+        if(SockUtil::getSockError(m_fd) != 0)
+        {
+            handleError();
+            return;    
+        }
+        
+        m_loop->updateHandler(m_fd, TNET_READ);
+
+        updateActiveTime();
+
+        m_status = Connected;    
+        
+        m_callback(shared_from_this(), Conn_ConnectEvent, 0);
+    }
+        
     void Connection::handleRead()
     {
         if(m_status != Connected)

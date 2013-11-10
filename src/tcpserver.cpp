@@ -1,9 +1,11 @@
 #include "tcpserver.h"
 
+#include <algorithm>
+
 #include "address.h"
 #include "sockutil.h"
 #include "log.h"
-
+#include "acceptor.h"
 #include "connection.h"
 #include "ioloop.h"
 
@@ -23,8 +25,9 @@ namespace tnet
 
     int TcpServer::listen(const Address& addr, const ConnEventCallback_t& callback)
     {
-        NewConnCallback_t callback = std::bind(&TcpServer::onNewConnection, this, _1, callback);
-        AcceptorPtr_t acceptor = AcceptorPtr_t(new Acceptor(m_loop, callback));
+        LOG_INFO("listen %s:%d", addr.ipstr().c_str(), addr.port());
+        NewConnCallback_t cb = std::bind(&TcpServer::onNewConnection, this, _1, _2, callback);
+        AcceptorPtr_t acceptor = AcceptorPtr_t(new Acceptor(m_loop, cb));
         if(acceptor->listen(addr) < 0)
         {
             return -1;    
@@ -34,30 +37,38 @@ namespace tnet
         return 0;
     }
 
-    int TcpServer::start(int maxProcess)
+    void TcpServer::start(int maxProcess)
     {
-        return 0;    
+        for_each(m_acceptors.begin(), m_acceptors.end(), 
+            std::bind(&Acceptor::start, _1));
+
+        m_loop->start();
     }
 
-    int TcpServer::stop()
+    void TcpServer::stop()
     {
-        
+        m_loop->stop();
+        for_each(m_acceptors.begin(), m_acceptors.end(), 
+            std::bind(&Acceptor::stop, _1));
     }
 
-    int TcpServer::onNewConnection(int fd, const ConnEventCallback_t& callback)
+    void TcpServer::onNewConnection(IOLoop* loop, int fd, const ConnEventCallback_t& callback)
     {
         int curConns = Connection::getCurConnections();
         if(curConns > Connection::getMaxConnections())
         {
             LOG_ERROR("too many connections, exceed %d", Connection::getMaxConnections());
             close(fd);
-            return -1;    
+            return;    
         }   
-        
-        ConnectionPtr_t conn = Connection::create(m_loop, fd);
+       
+        LOG_INFO("new connection %d", fd); 
+        ConnectionPtr_t conn = Connection::create(loop, fd);
         
         conn->setEventCallback(callback);
 
-        return 0;
+        conn->onEstablished();
+
+        return;
     }
 }

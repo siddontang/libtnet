@@ -18,11 +18,11 @@ namespace tnet
         
         int listen(const Address& addr, const ConnEventCallback_t& callback);
     
-        void start(int maxProcess);
+        void start(int maxProcess = 0);
         void stop();
         
     private:
-        void onNewConnection(int fd, const ConnEventCallback_t& callback);
+        void onNewConnection(IOLoop* loop, int fd, const ConnEventCallback_t& callback);
 
     private:
         IOLoop* m_loop;

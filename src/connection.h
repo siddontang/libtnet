@@ -33,7 +33,7 @@ namespace tnet
 
         static ConnectionPtr_t create(IOLoop* loop, int fd);
 
-        void setEventCallback(const ConnEventCallback_t& callback);
+        void setEventCallback(const ConnEventCallback_t& callback) { m_callback = callback; }
 
         //timeout is milliseconds, if timeout is 0, close immediately
         void close(int timeout = 0);

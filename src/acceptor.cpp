@@ -55,7 +55,10 @@ namespace tnet
         {
             LOG_ERROR("invalid sock fd, can't start");
             return;    
-        } 
+        }
+        
+        m_loop->addHandler(m_sockFd, TNET_READ,
+            std::bind(&Acceptor::onAccept, this, _1, _2));  
     }
 
     void Acceptor::stop()
@@ -69,6 +72,7 @@ namespace tnet
         int sockFd = accept4(m_sockFd, NULL, NULL, SOCK_NONBLOCK | SOCK_CLOEXEC);
         if(sockFd < 0)
         {
+            LOG_INFO("accept error");
             int err = errno;
             if(err == EMFILE || err == ENFILE)
             {
@@ -82,6 +86,7 @@ namespace tnet
         }
         else
         {
+            LOG_INFO("onAccept %d", sockFd);
             m_callback(loop, sockFd);    
         } 
     }

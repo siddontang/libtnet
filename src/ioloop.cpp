@@ -49,8 +49,6 @@ namespace tnet
         while(m_running)
         {
             m_poller->poll(MaxPollWaitTime, m_events);
-
-
         }    
     }
 
