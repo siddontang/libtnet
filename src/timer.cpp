@@ -13,9 +13,9 @@ namespace tnet
     const uint64_t nanoPerSeconds = 1000000000;
     const uint64_t nanoPerMilli = 1000000;
 
-    Timer::Timer(IOLoop* loop, const TimerCallback_t& callback, int repeat, int after)
+    Timer::Timer(IOLoop* loop, const TimerHandler_t& handler, int repeat, int after)
         : m_loop(loop)
-        , m_callback(callback)
+        , m_handler(handler)
     {
         m_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
         if(m_fd < 0)
@@ -66,6 +66,6 @@ namespace tnet
     {
         TimerPtr_t timer = shared_from_this();
         
-        m_callback(timer);     
+        m_handler(timer);     
     }
 }

@@ -11,9 +11,6 @@ using namespace std;
 
 namespace tnet
 {
-    int Connection::ms_maxConnections = 1024;
-    int Connection::ms_curConnections = 0;
-    
     const int MaxReadBuffer = 4096;
 
     Connection::Connection(IOLoop* loop, int fd)
@@ -21,21 +18,12 @@ namespace tnet
         , m_fd(fd)
         , m_status(None)
     {
-        ++ms_curConnections;
     }
 
     Connection::~Connection()
     {
         LOG_INFO("connection destroyed");
-        --ms_curConnections;
     }
-    
-    ConnectionPtr_t Connection::create(IOLoop* loop, int fd)
-    {
-        ConnectionPtr_t conn = std::make_shared<Connection>(loop, fd);
-         
-        return conn;     
-    }    
 
     void Connection::updateActiveTime()
     {

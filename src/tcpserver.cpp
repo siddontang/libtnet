@@ -54,16 +54,8 @@ namespace tnet
 
     void TcpServer::onNewConnection(IOLoop* loop, int fd, const ConnEventCallback_t& callback)
     {
-        int curConns = Connection::getCurConnections();
-        if(curConns > Connection::getMaxConnections())
-        {
-            LOG_ERROR("too many connections, exceed %d", Connection::getMaxConnections());
-            close(fd);
-            return;    
-        }   
-       
         LOG_INFO("new connection %d", fd); 
-        ConnectionPtr_t conn = Connection::create(loop, fd);
+        ConnectionPtr_t conn = std::make_shared<Connection>(loop, fd);
         
         conn->setEventCallback(callback);
 

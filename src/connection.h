@@ -26,12 +26,6 @@ namespace tnet
         
         Connection(IOLoop* loop, int fd);
         ~Connection();
-        
-        static int setMaxConnections(int maxConnections) { ms_maxConnections = maxConnections; }
-        static int getMaxConnections() { return ms_maxConnections; }
-        static int getCurConnections() { return ms_curConnections; }
-
-        static ConnectionPtr_t create(IOLoop* loop, int fd);
 
         void setEventCallback(const ConnEventCallback_t& callback) { m_callback = callback; }
 
@@ -65,9 +59,6 @@ namespace tnet
         uint64_t m_lastActiveTime;
 
         std::string m_sendBuffer;
-
-        static int ms_maxConnections;
-        static int ms_curConnections;
     };
     
 }

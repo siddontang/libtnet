@@ -59,5 +59,7 @@ namespace tnet
     typedef std::shared_ptr<Acceptor> AcceptorPtr_t;
 
     typedef std::shared_ptr<Timer> TimerPtr_t;
-    typedef std::function<void (const TimerPtr_t&)> TimerCallback_t;
+    typedef std::function<void (const TimerPtr_t&)> TimerHandler_t;
+
+    typedef std::function<void (int)> SignalHandler_t;
 }
