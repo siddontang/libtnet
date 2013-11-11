@@ -64,6 +64,8 @@ namespace tnet
     void Acceptor::stop()
     {
         assert(m_sockFd > 0);
+        
+        LOG_INFO("stop %d", m_sockFd);
         m_loop->removeHandler(m_sockFd);    
     }
 

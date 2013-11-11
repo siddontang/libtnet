@@ -100,6 +100,6 @@ namespace tnet
         time_t now = time(NULL);
         strftime(buf, sizeof(buf), DateTimeFormat, gmtime(&now));
 
-        fprintf(m_fd, "%s %5s %s %s:%d %s\n", buf, level, function, file, line, msg);    
+        fprintf(m_fd, "%s %s [%d] %s %s:%d %s\n", buf, level, getpid(), function, file, line, msg);    
     }
 }

@@ -13,7 +13,7 @@ using namespace std;
 namespace tnet
 {
     const int DefaultEventsCapacity = 1024;
-    const int MaxPollWaitTime = 10 * 1000;
+    const int MaxPollWaitTime = 1 * 1000;
 
     IOLoop::IOLoop()
     {
@@ -49,7 +49,9 @@ namespace tnet
         while(m_running)
         {
             m_poller->poll(MaxPollWaitTime, m_events);
-        }    
+        }
+        
+        LOG_INFO("loop stop");    
     }
 
     int IOLoop::addHandler(int fd, int events, const IOHandler_t& handler)

@@ -1,5 +1,6 @@
 #include "timer.h"
 
+#include <assert.h>
 #include <sys/timerfd.h>
 #include <errno.h>
 
@@ -29,19 +30,24 @@ namespace tnet
 
     Timer::~Timer()
     {
-        
+        LOG_INFO("destroyed");
+        if(m_fd > 0)
+        {
+            close(m_fd);
+        }
     }
 
     void Timer::start()
     {
+        assert(m_fd > 0);
         m_loop->addHandler(m_fd, TNET_READ, 
             std::bind(&Timer::onTimer, shared_from_this(), _1, _2));    
     }
 
     void Timer::stop()
     {
+        assert(m_fd > 0);
         m_loop->removeHandler(m_fd);
-        close(m_fd);    
     }
 
     void Timer::reset(int repeat, int after)

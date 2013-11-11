@@ -14,6 +14,7 @@ namespace tnet
     class Acceptor;
     class Connection;
     class Timer;
+    class Signaler;
 
     enum 
     {
@@ -33,6 +34,17 @@ namespace tnet
         Conn_ErrorEvent,
         Conn_CloseEvent,
     };
+
+    template<typename T, typename Func>
+    void for_each_all(T& c, const Func& func)
+    {
+        typename T::iterator iter = c.begin();
+        while(iter != c.end())
+        {
+            func(*iter);
+            ++iter;
+        }
+    }
 
     typedef std::shared_ptr<Connection> ConnectionPtr_t;
 
@@ -61,5 +73,6 @@ namespace tnet
     typedef std::shared_ptr<Timer> TimerPtr_t;
     typedef std::function<void (const TimerPtr_t&)> TimerHandler_t;
 
+    typedef std::shared_ptr<Signaler> SignalerPtr_t;
     typedef std::function<void (int)> SignalHandler_t;
 }
