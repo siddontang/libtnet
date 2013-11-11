@@ -59,19 +59,30 @@ namespace tnet
             t.it_interval.tv_nsec = ((uint64_t)repeat % milliPerSeconds) * nanoPerMilli;
         }
 
-        if(after > 0)
-        {
-            t.it_value.tv_sec = (uint64_t)after / milliPerSeconds;
-            t.it_value.tv_nsec = ((uint64_t)after % milliPerSeconds) * nanoPerMilli; 
-        }
+        struct timespec now;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        t.it_value.tv_sec = now.tv_sec + (uint64_t)after / milliPerSeconds;
+        t.it_value.tv_nsec = now.tv_nsec + ((uint64_t)after % milliPerSeconds) * nanoPerMilli; 
 
-        timerfd_settime(m_fd, 0, &t, NULL);
+        if(timerfd_settime(m_fd, TFD_TIMER_ABSTIME, &t, NULL) < 0)
+        {
+            LOG_ERROR("set timer error");    
+        } 
     }
 
     void Timer::onTimer(IOLoop* loop, int events)
     {
         TimerPtr_t timer = shared_from_this();
-        
-        m_handler(timer);     
+
+        uint64_t exp;
+        ssize_t s = read(m_fd, &exp, sizeof(uint64_t));
+        if(s != sizeof(exp))
+        {
+            LOG_ERROR("onTimer read error");       
+        }
+        else
+        {
+            m_handler(timer);     
+        }
     }
 }
