@@ -10,10 +10,10 @@ namespace tnet
     {
     public:
         //repeat and after are all milliseconds
-        Timer(IOLoop* loop, const TimerHandler_t& handler, int repeat, int after);
+        Timer(const TimerHandler_t& handler, int repeat, int after);
         ~Timer();
 
-        void start();
+        void start(IOLoop* loop);
         void stop();
 
         void reset(int repeat, int after);
@@ -26,7 +26,8 @@ namespace tnet
     private:
         IOLoop* m_loop;
         int m_fd;
-
+        bool m_running;
+        
         TimerHandler_t m_handler;
     };
 }

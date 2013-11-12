@@ -10,7 +10,8 @@ namespace tnet
 {
     class Address;
     class IOLoop;
-
+    class Process;
+    
     class TcpServer : public nocopyable
     {
     public:
@@ -25,18 +26,20 @@ namespace tnet
         IOLoop* getLoop() { return m_loop; }
 
     private:
-        int startWorker(size_t workerNum);
+        void initSignaler();
+        
         void run();
         void onSignal(int signum);
         void onNewConnection(IOLoop* loop, int fd, const ConnEventCallback_t& callback);
 
-        void checkWorkerDead();
-        void handleSigChld();
+        void onSubProcDead();
 
         void onStopTimer(const TimerPtr_t& timer);
 
     private:
         IOLoop* m_loop;
+        
+        ProcessPtr_t m_process;
 
         std::vector<AcceptorPtr_t> m_acceptors;
 

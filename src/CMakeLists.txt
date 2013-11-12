@@ -7,6 +7,7 @@ set (SRCS
     log.cpp
     ioloop.cpp
     poller.cpp
+    process.cpp
     signaler.cpp
     sockutil.cpp
     tcpserver.cpp

@@ -15,37 +15,46 @@
 #include "ioloop.h"
 #include "signaler.h"
 #include "timer.h"
+#include "process.h"
 
 using namespace std;
 
 namespace tnet
 {
     TcpServer::TcpServer()
+        : m_loop(0)
     {
-        m_loop = new IOLoop();
+        m_process = std::make_shared<Process>();
+    
         m_running = false;
-        m_workerProc = true;
-        m_workerNum = 0;
-        
+
+        initSignaler();
+    }
+ 
+    TcpServer::~TcpServer()
+    {
+        if(m_loop)
+        {
+            delete m_loop;
+        }
+    }
+
+    void TcpServer::initSignaler()
+    {
         vector<int> signums;
         
         signums.push_back(SIGINT);
         signums.push_back(SIGTERM);
         signums.push_back(SIGCHLD);
 
-        m_signaler = std::make_shared<Signaler>(m_loop, signums, std::bind(&TcpServer::onSignal, this, _1));
-    }
- 
-    TcpServer::~TcpServer()
-    {
-        delete m_loop;
+        m_signaler = std::make_shared<Signaler>(signums, std::bind(&TcpServer::onSignal, this, _1)); 
     }
 
     int TcpServer::listen(const Address& addr, const ConnEventCallback_t& callback)
     {
         LOG_INFO("listen %s:%d", addr.ipstr().c_str(), addr.port());
         NewConnCallback_t cb = std::bind(&TcpServer::onNewConnection, this, _1, _2, callback);
-        AcceptorPtr_t acceptor = std::make_shared<Acceptor>(m_loop, cb);
+        AcceptorPtr_t acceptor = std::make_shared<Acceptor>(cb);
         if(acceptor->listen(addr) < 0)
         {
             return -1;    
@@ -62,64 +71,29 @@ namespace tnet
             return;    
         }
 
-        m_running = true;
+        m_loop = new IOLoop();
         
-        if(m_workerProc)
-        {
+        m_running = true;
+      
+        if(!m_process->hasChild())
+        {  
             for_each(m_acceptors.begin(), m_acceptors.end(), 
-                std::bind(&Acceptor::start, _1));
+                std::bind(&Acceptor::start, _1, m_loop));
         }
 
-        m_signaler->start();
+        m_signaler->start(m_loop);
 
         m_loop->start(); 
     }
 
-    int TcpServer::startWorker(size_t workerNum)
-    {
-        for(size_t i = 0; i < workerNum; ++i)
-        {
-            pid_t pid = fork();
-            if(pid < 0)
-            {
-                LOG_ERROR("fork child error %s", errorMsg(errno));
-                continue;    
-            }
-            else if(pid == 0)
-            {
-                LOG_INFO("start worker %d", getpid());
-                m_workers.clear();
-                m_workerProc = true;
-
-                run();
-
-                return 0;
-            }
-            else
-            {
-                m_workerProc = false;
-                m_workers.insert(pid);            
-            }
-        }
-
-        return 1;
-    }
-
     void TcpServer::start(size_t maxProcess)
     {
-        m_workerNum = maxProcess;
-        m_workers.clear();
-
-        if(maxProcess > 0)
+        if(maxProcess > 1)
         {
-            if(startWorker(maxProcess) == 0)
-            {
-                //child return
-                return;    
-            }
+            m_process->start(maxProcess);   
         }
 
-        LOG_INFO("run main process");
+        LOG_INFO("run process %d, ismain %d", getpid(), m_process->isMainProc());
 
         run();
     }
@@ -133,40 +107,36 @@ namespace tnet
 
         m_running = false;
 
-        if(m_workerProc)
+        m_signaler->stop();
+        
+        if(!m_process->hasChild()) 
         {
             for_each_all(m_acceptors, std::bind(&Acceptor::stop, _1));
-        }
-
-        if(m_workers.empty())
-        {
-            m_signaler->stop();
-
+         
             m_loop->stop();    
         }
         else
         {
-            assert(m_workerProc == false);   
-       
-            //notify work proc to quit
-            for_each_all(m_workers, std::bind(kill, _1, SIGTERM));
+            assert(m_process->isMainProc());
+            
+            m_process->stop();
         
             LOG_INFO("wait child to stop");
-            TimerPtr_t timer = std::make_shared<Timer>(m_loop, std::bind(&TcpServer::onStopTimer, this, _1), 1000, 0);
-            timer->start();
+            TimerPtr_t timer = std::make_shared<Timer>(std::bind(&TcpServer::onStopTimer, this, _1), 1000, 0);
+            timer->start(m_loop);
         }
     }
 
     void TcpServer::onStopTimer(const TimerPtr_t& timer)
     {
         LOG_INFO("on stop timer");
-        checkWorkerDead();
+       
+        m_process->wait();
         
-        if(m_workers.empty())
+        if(!m_process->hasChild())
         {
             timer->stop();
 
-            m_signaler->stop();
             m_loop->stop();    
         }
     }
@@ -183,29 +153,17 @@ namespace tnet
         return;
     }
 
-    void TcpServer::checkWorkerDead()
+    void TcpServer::onSubProcDead()
     {
-        pid_t pid;
-        int status = 0;
-
-        while((pid = waitpid(-1, &status, WNOHANG)) > 0)
-        {
-            LOG_INFO("child was dead %d", pid);
-            m_workers.erase(pid);
-        }
-    }   
-
-    void TcpServer::handleSigChld()
-    {
-        LOG_INFO("handle Sig Child");
-        assert(m_workerProc == false);
+        LOG_INFO("onSubProcDead");
+        assert(m_process->isMainProc());
         
-        checkWorkerDead();
+        int deads = m_process->wait();
         
         if(!m_running)
         {
             //main stop, now only wait child stop    
-            if(m_workers.empty())
+            if(!m_process->hasChild())
             {
                 m_signaler->stop();
                 
@@ -216,13 +174,7 @@ namespace tnet
         {
             //main running, restart child
             LOG_INFO("worker was quit, restart it");
-  
-            size_t workerNum = m_workerNum - m_workers.size();
-            
-            if(workerNum > 0)
-            {
-                startWorker(workerNum);
-            }
+            m_process->restart(); 
         } 
     }
 
@@ -239,7 +191,7 @@ namespace tnet
                 break;
             case SIGCHLD:
                 {
-                    handleSigChld();                             
+                    onSubProcDead();
                 }
                 break;    
             default:

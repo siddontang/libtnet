@@ -27,6 +27,14 @@ namespace tnet
     IOLoop::~IOLoop()
     {
         delete m_poller;
+   
+        for(size_t i = 0; i < m_events.size(); ++i)
+        {
+            if(m_events[i])
+            {
+                LOG_WARN("event %d not stop proper", i);    
+            }    
+        }
         
         for_each(m_events.begin(), m_events.end(), 
             default_delete<IOEvent>());

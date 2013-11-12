@@ -21,10 +21,11 @@ namespace tnet
         return open("/dev/null", O_RDONLY | O_CLOEXEC);    
     }
 
-    Acceptor::Acceptor(IOLoop* loop, const NewConnCallback_t& callback)
-        : m_loop(loop)
+    Acceptor::Acceptor(const NewConnCallback_t& callback)
+        : m_loop(0)
         , m_sockFd(0)
         , m_dummyFd(createDummyFd())
+        , m_running(false)
         , m_callback(callback)
     {
         
@@ -32,7 +33,10 @@ namespace tnet
 
     Acceptor::~Acceptor()
     {
-        close(m_sockFd);
+        if(m_sockFd > 0)
+        {
+            close(m_sockFd);
+        }
         close(m_dummyFd);    
     }
 
@@ -49,13 +53,19 @@ namespace tnet
         return m_sockFd;
     }
 
-    void Acceptor::start()
+    void Acceptor::start(IOLoop* loop)
     {
-        if(m_sockFd < 0)
+        assert(m_sockFd > 0);
+
+        if(m_running)
         {
-            LOG_ERROR("invalid sock fd, can't start");
+            LOG_WARN("acceptor was started");
             return;    
         }
+
+        m_loop = loop;
+    
+        m_running = true;
         
         m_loop->addHandler(m_sockFd, TNET_READ,
             std::bind(&Acceptor::onAccept, this, _1, _2));  
@@ -64,7 +74,14 @@ namespace tnet
     void Acceptor::stop()
     {
         assert(m_sockFd > 0);
-        
+        if(!m_running)
+        {
+            LOG_WARN("acceptor was stoped");
+            return;    
+        }
+
+        m_running = false;
+
         LOG_INFO("stop %d", m_sockFd);
         m_loop->removeHandler(m_sockFd);    
     }

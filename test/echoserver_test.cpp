@@ -29,7 +29,9 @@ int main()
     TcpServer s;
     s.listen(Address(11181), std::bind(&onConnEvent, _1, _2, _3));
 
-    s.start();
+    s.start(1);
+
+    LOG_INFO("test over");
 
     return 0;
 }

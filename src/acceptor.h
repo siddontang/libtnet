@@ -10,12 +10,12 @@ namespace tnet
     class Acceptor : public nocopyable
     {
     public:
-        Acceptor(IOLoop* loop, const NewConnCallback_t& callback);
+        Acceptor(const NewConnCallback_t& callback);
         ~Acceptor();
     
         int listen(const Address& addr);
 
-        void start();
+        void start(IOLoop* loop);
         void stop();
 
     private:
@@ -26,6 +26,8 @@ namespace tnet
         
         int m_sockFd;
         int m_dummyFd;    
+   
+        bool m_running;
     
         NewConnCallback_t m_callback; 
     };   

@@ -14,8 +14,9 @@ namespace tnet
     const uint64_t nanoPerSeconds = 1000000000;
     const uint64_t nanoPerMilli = 1000000;
 
-    Timer::Timer(IOLoop* loop, const TimerHandler_t& handler, int repeat, int after)
-        : m_loop(loop)
+    Timer::Timer(const TimerHandler_t& handler, int repeat, int after)
+        : m_loop(0)
+        , m_running(false)
         , m_handler(handler)
     {
         m_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
@@ -37,21 +38,46 @@ namespace tnet
         }
     }
 
-    void Timer::start()
+    void Timer::start(IOLoop* loop)
     {
         assert(m_fd > 0);
+
+        if(m_running)
+        {
+            LOG_WARN("timer was started");
+            return;    
+        }
+
+        LOG_INFO("start timer %d", m_fd);
+
+        m_loop = loop;
+        
+        m_running = true;
+
         m_loop->addHandler(m_fd, TNET_READ, 
             std::bind(&Timer::onTimer, shared_from_this(), _1, _2));    
     }
 
     void Timer::stop()
     {
-        assert(m_fd > 0);
+        if(!m_running)
+        {
+            LOG_WARN("timer was stopped");
+            return;
+        }
+
+        m_running = false;
         m_loop->removeHandler(m_fd);
+    
     }
 
     void Timer::reset(int repeat, int after)
     {
+        if(m_fd <= 0)
+        {
+            return;    
+        }
+
         struct itimerspec t;
         if(repeat > 0)
         {

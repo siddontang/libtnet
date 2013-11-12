@@ -11,11 +11,11 @@ namespace tnet
                    , public std::enable_shared_from_this<Signaler>
     {
     public:
-        Signaler(IOLoop* loop, int signum, const SignalHandler_t& handler);
-        Signaler(IOLoop* loop, const std::vector<int>& signums, const SignalHandler_t& handler);
+        Signaler(int signum, const SignalHandler_t& handler);
+        Signaler(const std::vector<int>& signums, const SignalHandler_t& handler);
         ~Signaler();
 
-        void start();
+        void start(IOLoop* loop);
         void stop();
 
     private:
@@ -25,6 +25,7 @@ namespace tnet
     private:
         IOLoop* m_loop;
         int m_fd;
+        bool m_running;
         std::vector<int> m_signums;
         SignalHandler_t m_handler;
     };    
