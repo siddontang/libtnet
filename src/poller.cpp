@@ -44,6 +44,8 @@ namespace tnet
     {
         assert(m_fd > 0);
         struct epoll_event event;
+     
+        event.data.u64 = 0;
         
         event.data.fd = fd;
         event.events = (events & TNET_READ ? EPOLLIN : 0)
@@ -68,6 +70,7 @@ namespace tnet
 
         struct epoll_event event;
         
+        event.data.u64 = 0;
         event.events = (events & TNET_READ ? EPOLLIN : 0)
                      | (events & TNET_WRITE ? EPOLLOUT : 0);   
 
@@ -120,8 +123,11 @@ namespace tnet
             {
                 ev->events = (want & TNET_READ ? EPOLLIN : 0)
                            | (want & TNET_WRITE ? EPOLLOUT : 0);
-                epoll_ctl(m_fd, want ? EPOLL_CTL_MOD : EPOLL_CTL_DEL, fd, ev); 
-                continue;
+                if(epoll_ctl(m_fd, want ? EPOLL_CTL_MOD : EPOLL_CTL_DEL, fd, ev) < 0)
+                { 
+                    LOG_ERROR("ctl error %s", errorMsg(errno));
+                    continue;
+                }
             }
 
             (io->handler)(m_loop, got);

@@ -14,22 +14,20 @@ namespace tnet
         Process();
         ~Process();
         
-        void start(size_t num);
-        void stop();
-        void restart();
+        void wait(size_t num, const ProcessCallback_t& callback);
 
-        //same as waitpid, return dead children num
-        int wait();
-        
+        void kill();
+
         bool isMainProc() { return m_main == getpid(); }
         
         bool hasChild() { return m_children.size() > 0; }
 
+    private:
+        pid_t create();
 
     private:
         pid_t m_main;
         std::set<pid_t> m_children;
-        size_t m_childNum;
     };
     
 }

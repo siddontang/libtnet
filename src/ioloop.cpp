@@ -7,6 +7,8 @@
 #include "poller.h"
 #include "log.h"
 #include "ioevent.h"
+#include "timer.h"
+#include "notifier.h"
 
 using namespace std;
 
@@ -18,23 +20,15 @@ namespace tnet
     IOLoop::IOLoop()
     {
         m_running = false;     
-    
+     
         m_poller = new Poller(this); 
-        
+         
         m_events.resize(DefaultEventsCapacity, 0);
     }
     
     IOLoop::~IOLoop()
     {
         delete m_poller;
-   
-        for(size_t i = 0; i < m_events.size(); ++i)
-        {
-            if(m_events[i])
-            {
-                LOG_WARN("event %d not stop proper", i);    
-            }    
-        }
         
         for_each(m_events.begin(), m_events.end(), 
             default_delete<IOEvent>());
@@ -44,12 +38,17 @@ namespace tnet
     {
         m_running = true;
 
+        m_notifier = std::make_shared<Notifier>(std::bind(&IOLoop::onWake, this, _1));
+        m_notifier->start(this);
+
         run();
     }
 
     void IOLoop::stop()
     {
         m_running = false;    
+    
+        m_notifier->notify();
     }
 
     void IOLoop::run()
@@ -57,16 +56,20 @@ namespace tnet
         while(m_running)
         {
             m_poller->poll(MaxPollWaitTime, m_events);
+       
+            handleCallbacks();
         }
         
         LOG_INFO("loop stop");    
+    
+        m_notifier->stop();
     }
 
     int IOLoop::addHandler(int fd, int events, const IOHandler_t& handler)
     {
         if(m_events.size() <= fd)
         {
-            m_events.resize(fd, 0);    
+            m_events.resize(fd + 1, 0);    
         }
 
         if(m_events[fd] != 0)
@@ -121,8 +124,46 @@ namespace tnet
         return 0;
     }
 
+    void onTimerHandler(const TimerPtr_t& timer, const Callback_t& callback)
+    {
+        callback();
+        timer->stop();
+    }
+
     void IOLoop::runAfter(int timeout, const Callback_t& callback)
     {
+        TimerPtr_t timer = std::make_shared<Timer>(
+            std::bind(&onTimerHandler, _1, callback), timeout, 0);    
+        timer->start(this);
+    }
+
+    void IOLoop::addCallback(const Callback_t& callback)
+    {
+        {
+            SpinLockGuard g(m_lock);
         
+            m_callbacks.push_back(callback);    
+        }
+    
+        m_notifier->notify();
+    }
+
+    void IOLoop::handleCallbacks()
+    {
+        vector<Callback_t> callbacks;
+        {
+            SpinLockGuard g(m_lock);
+            callbacks.swap(m_callbacks);
+        }    
+
+        for(size_t i = 0; i < callbacks.size(); ++i)
+        {
+            callbacks[i]();    
+        }
+    }
+
+    void IOLoop::onWake(const NotifierPtr_t& notifier)
+    {
+        //only to wakeup poll    
     }
 }

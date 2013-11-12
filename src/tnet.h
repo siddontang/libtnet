@@ -16,6 +16,7 @@ namespace tnet
     class Timer;
     class Signaler;
     class Process;
+    class Notifier;
 
     enum 
     {
@@ -48,10 +49,12 @@ namespace tnet
     }
 
     typedef std::shared_ptr<Connection> ConnectionPtr_t;
+    typedef std::weak_ptr<Connection> WeakConnectionPtr_t;
     typedef std::shared_ptr<Acceptor> AcceptorPtr_t;
     typedef std::shared_ptr<Timer> TimerPtr_t;
     typedef std::shared_ptr<Signaler> SignalerPtr_t;
     typedef std::shared_ptr<Process> ProcessPtr_t;
+    typedef std::shared_ptr<Notifier> NotifierPtr_t;
 
     typedef std::function<void (IOLoop*, int)> IOHandler_t;
     typedef std::function<void (IOLoop*, int)> NewConnCallback_t;
@@ -76,5 +79,6 @@ namespace tnet
 
     typedef std::function<void (const TimerPtr_t&)> TimerHandler_t;
 
-    typedef std::function<void (int)> SignalHandler_t;
+    typedef std::function<void (const SignalerPtr_t&, int)> SignalHandler_t;
+    typedef std::function<void (const NotifierPtr_t&)> NotifierHandler_t;
 }

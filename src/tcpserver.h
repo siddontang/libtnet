@@ -11,6 +11,7 @@ namespace tnet
     class Address;
     class IOLoop;
     class Process;
+    class ConnChecker;
     
     class TcpServer : public nocopyable
     {
@@ -29,7 +30,7 @@ namespace tnet
         void initSignaler();
         
         void run();
-        void onSignal(int signum);
+        void onSignal(const SignalerPtr_t& signaler, int signum);
         void onNewConnection(IOLoop* loop, int fd, const ConnEventCallback_t& callback);
 
         void onSubProcDead();
@@ -40,6 +41,9 @@ namespace tnet
         IOLoop* m_loop;
         
         ProcessPtr_t m_process;
+
+        typedef std::shared_ptr<ConnChecker> ConnCheckerPtr_t;
+        ConnCheckerPtr_t m_connChecker;
 
         std::vector<AcceptorPtr_t> m_acceptors;
 

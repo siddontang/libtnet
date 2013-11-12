@@ -16,6 +16,7 @@
 #include "signaler.h"
 #include "timer.h"
 #include "process.h"
+#include "connchecker.h"
 
 using namespace std;
 
@@ -27,8 +28,6 @@ namespace tnet
         m_process = std::make_shared<Process>();
     
         m_running = false;
-
-        initSignaler();
     }
  
     TcpServer::~TcpServer()
@@ -45,9 +44,8 @@ namespace tnet
         
         signums.push_back(SIGINT);
         signums.push_back(SIGTERM);
-        signums.push_back(SIGCHLD);
 
-        m_signaler = std::make_shared<Signaler>(signums, std::bind(&TcpServer::onSignal, this, _1)); 
+        m_signaler = std::make_shared<Signaler>(signums, std::bind(&TcpServer::onSignal, this, _1, _2)); 
     }
 
     int TcpServer::listen(const Address& addr, const ConnEventCallback_t& callback)
@@ -74,12 +72,15 @@ namespace tnet
         m_loop = new IOLoop();
         
         m_running = true;
+     
+        initSignaler();
       
-        if(!m_process->hasChild())
-        {  
-            for_each(m_acceptors.begin(), m_acceptors.end(), 
-                std::bind(&Acceptor::start, _1, m_loop));
-        }
+        m_connChecker = std::make_shared<ConnChecker>();
+            
+        for_each(m_acceptors.begin(), m_acceptors.end(), 
+            std::bind(&Acceptor::start, _1, m_loop));
+            
+        m_connChecker->start(m_loop);
 
         m_signaler->start(m_loop);
 
@@ -88,15 +89,15 @@ namespace tnet
 
     void TcpServer::start(size_t maxProcess)
     {
-        if(maxProcess > 1)
+        if(maxProcess > 0)
         {
-            m_process->start(maxProcess);   
+            m_process->wait(maxProcess, std::bind(&TcpServer::run, this));   
         }
-
-        LOG_INFO("run process %d, ismain %d", getpid(), m_process->isMainProc());
-
-        run();
-    }
+        else
+        {
+            run();
+        }
+    }   
 
     void TcpServer::stop()
     {
@@ -109,36 +110,11 @@ namespace tnet
 
         m_signaler->stop();
         
-        if(!m_process->hasChild()) 
-        {
-            for_each_all(m_acceptors, std::bind(&Acceptor::stop, _1));
+        for_each_all(m_acceptors, std::bind(&Acceptor::stop, _1));
+        
+        m_connChecker->stop();
          
-            m_loop->stop();    
-        }
-        else
-        {
-            assert(m_process->isMainProc());
-            
-            m_process->stop();
-        
-            LOG_INFO("wait child to stop");
-            TimerPtr_t timer = std::make_shared<Timer>(std::bind(&TcpServer::onStopTimer, this, _1), 1000, 0);
-            timer->start(m_loop);
-        }
-    }
-
-    void TcpServer::onStopTimer(const TimerPtr_t& timer)
-    {
-        LOG_INFO("on stop timer");
-       
-        m_process->wait();
-        
-        if(!m_process->hasChild())
-        {
-            timer->stop();
-
-            m_loop->stop();    
-        }
+        m_loop->stop();    
     }
 
     void TcpServer::onNewConnection(IOLoop* loop, int fd, const ConnEventCallback_t& callback)
@@ -150,35 +126,12 @@ namespace tnet
 
         conn->onEstablished();
 
+        m_connChecker->addConn(fd, conn);
+
         return;
     }
 
-    void TcpServer::onSubProcDead()
-    {
-        LOG_INFO("onSubProcDead");
-        assert(m_process->isMainProc());
-        
-        int deads = m_process->wait();
-        
-        if(!m_running)
-        {
-            //main stop, now only wait child stop    
-            if(!m_process->hasChild())
-            {
-                m_signaler->stop();
-                
-                m_loop->stop();    
-            }
-        }
-        else
-        {
-            //main running, restart child
-            LOG_INFO("worker was quit, restart it");
-            m_process->restart(); 
-        } 
-    }
-
-    void TcpServer::onSignal(int signum)
+    void TcpServer::onSignal(const SignalerPtr_t& signaler, int signum)
     {
         LOG_INFO("signum %d", signum);
         switch(signum)
@@ -189,11 +142,6 @@ namespace tnet
                     stop();
                 }
                 break;
-            case SIGCHLD:
-                {
-                    onSubProcDead();
-                }
-                break;    
             default:
                 LOG_ERROR("invalid signal %d", signum);
                 break;

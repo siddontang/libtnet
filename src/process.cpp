@@ -2,6 +2,7 @@
 
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "log.h"
 
@@ -19,61 +20,69 @@ namespace tnet
         
     }
 
-    void Process::start(size_t num)
+    pid_t Process::create()
     {
-        m_childNum = num;
+        pid_t pid = fork();
+        if(pid < 0)
+        {
+            LOG_ERROR("fork error %s", errorMsg(errno));    
+            return 0;
+        }    
+        else if(pid == 0)
+        {
+            //child
+            m_children.clear();
+            return getpid();    
+        }
+        else
+        {
+            //parent 
+            m_children.insert(pid);    
+        } 
+
+        return 0;
+    }
+
+    void Process::wait(size_t num, const ProcessCallback_t& callback)
+    {
         for(size_t i = 0; i < num; ++i)
         {
-            pid_t pid = fork();
-            if(pid < 0)
+            pid_t pid = create();
+            if(pid != 0)
             {
-                LOG_ERROR("fork error %s", errorMsg(errno));    
-                continue;
-            }    
-            else if(pid == 0)
-            {
-                //child
-                m_children.clear();
+                callback();
                 return;    
             }
+        }
+
+        while(1)
+        {
+            int status = 0;
+            pid_t pid;
+            if((pid = waitpid(-1, &status, WNOHANG)) > 0)
+            {
+                LOG_INFO("child was dead, restart it");
+                m_children.erase(pid);
+            
+                if(create() != 0)
+                {
+                    callback();
+                    return;    
+                }
+            }    
             else
             {
-                //parent 
-                m_children.insert(pid);    
+                sleep(1);
+                continue;
             }
         }
 
         return;
     }
 
-    void Process::stop()
+    void Process::kill()
     {
-        for_each_all(m_children, std::bind(kill, _1, SIGTERM));    
+        for_each_all(m_children, std::bind(::kill, _1, SIGTERM));    
     }
 
-    void Process::restart()
-    {
-        size_t deads = m_childNum - m_children.size();    
-        if(deads > 0)
-        {
-            start(deads);    
-        }
-    }
-
-    int Process::wait()
-    {
-        pid_t pid;
-        int status = 0;
-
-        int deads = 0;
-        while((pid = waitpid(-1, &status, WNOHANG)) > 0)
-        {
-            LOG_INFO("child was dead %d", pid);
-            
-            m_children.erase(pid);
-            ++deads;
-        }
-
-        return deads;
-    }
 }

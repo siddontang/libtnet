@@ -120,6 +120,6 @@ namespace tnet
             return;  
         } 
     
-        m_handler(signum);
+        m_handler(signaler, signum);
     }
 }

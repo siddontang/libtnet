@@ -22,7 +22,7 @@ namespace tnet
 
     Connection::~Connection()
     {
-        LOG_INFO("connection destroyed");
+        LOG_INFO("connection destroyed %d", m_fd);
     }
 
     void Connection::updateActiveTime()
@@ -116,7 +116,7 @@ namespace tnet
         }
     }
 
-    void Connection::close(int timeout)
+    void Connection::shutDown(int timeout)
     {
         if(m_status == Disconnecting || m_status == Disconnected)
         {
@@ -265,7 +265,6 @@ namespace tnet
         m_loop->removeHandler(m_fd);
 
         close(m_fd);
-        m_fd = 0;
 
         m_callback(shared_from_this(), Conn_CloseEvent, 0);
     }

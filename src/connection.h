@@ -27,16 +27,21 @@ namespace tnet
         Connection(IOLoop* loop, int fd);
         ~Connection();
 
+        int getSockFd() { return m_fd; }
+
         void setEventCallback(const ConnEventCallback_t& callback) { m_callback = callback; }
 
         //timeout is milliseconds, if timeout is 0, close immediately
-        void close(int timeout = 0);
+        void shutDown(int timeout = 0);
         void send(const std::string& data);
 
         void onEstablished();
         void connect(const Address& addr);
 
-        uint64_t lastActiveTime(); 
+        uint64_t lastActiveTime() { return m_lastActiveTime; } 
+
+        bool isConnected() { return m_status == Connected; }
+        bool isConnecting() { return m_status == Connecting; }
 
     private:
         void onHandler(IOLoop*, int);
