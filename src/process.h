@@ -16,7 +16,7 @@ namespace tnet
         
         void wait(size_t num, const ProcessCallback_t& callback);
 
-        void kill();
+        void stop();
 
         bool isMainProc() { return m_main == getpid(); }
         
@@ -27,6 +27,7 @@ namespace tnet
 
     private:
         pid_t m_main;
+        bool m_running;
         std::set<pid_t> m_children;
     };
     

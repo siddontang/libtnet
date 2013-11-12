@@ -30,12 +30,9 @@ namespace tnet
         void initSignaler();
         
         void run();
+        void onStop();
         void onSignal(const SignalerPtr_t& signaler, int signum);
         void onNewConnection(IOLoop* loop, int fd, const ConnEventCallback_t& callback);
-
-        void onSubProcDead();
-
-        void onStopTimer(const TimerPtr_t& timer);
 
     private:
         IOLoop* m_loop;

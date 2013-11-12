@@ -99,7 +99,7 @@ namespace tnet
         }
     }   
 
-    void TcpServer::stop()
+    void TcpServer::onStop()
     {
         if(!m_running)
         {
@@ -115,6 +115,12 @@ namespace tnet
         m_connChecker->stop();
          
         m_loop->stop();    
+    }
+
+    void TcpServer::stop()
+    {
+        LOG_INFO("stop server");
+        m_process->stop(); 
     }
 
     void TcpServer::onNewConnection(IOLoop* loop, int fd, const ConnEventCallback_t& callback)
@@ -139,7 +145,7 @@ namespace tnet
             case SIGINT:
             case SIGTERM:
                 {
-                    stop();
+                    onStop();
                 }
                 break;
             default:

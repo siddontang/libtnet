@@ -11,6 +11,7 @@ using namespace std;
 namespace tnet
 {
     Process::Process()
+        : m_running(false)
     {
         m_main = getpid();     
     }
@@ -45,6 +46,7 @@ namespace tnet
 
     void Process::wait(size_t num, const ProcessCallback_t& callback)
     {
+        m_running = true;
         for(size_t i = 0; i < num; ++i)
         {
             pid_t pid = create();
@@ -55,14 +57,20 @@ namespace tnet
             }
         }
 
-        while(1)
+        while(!m_children.empty())
         {
             int status = 0;
             pid_t pid;
             if((pid = waitpid(-1, &status, WNOHANG)) > 0)
             {
-                LOG_INFO("child was dead, restart it");
                 m_children.erase(pid);
+                
+                if(!m_running)
+                {
+                    continue;    
+                }
+                
+                LOG_INFO("child was dead, restart it");
             
                 if(create() != 0)
                 {
@@ -80,8 +88,9 @@ namespace tnet
         return;
     }
 
-    void Process::kill()
+    void Process::stop()
     {
+        m_running = false;
         for_each_all(m_children, std::bind(::kill, _1, SIGTERM));    
     }
 

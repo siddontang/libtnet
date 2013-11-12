@@ -2,6 +2,8 @@
 
 #include <time.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #include "ioloop.h"
 #include "log.h"
@@ -211,7 +213,8 @@ namespace tnet
             return;    
         }
 
-        int n = write(m_fd, m_sendBuffer.data(), m_sendBuffer.size());
+        //to ignore signal pipe error
+        int n = ::send(m_fd, m_sendBuffer.data(), m_sendBuffer.size(), MSG_NOSIGNAL);
         if(n == int(m_sendBuffer.size()))
         {
             string().swap(m_sendBuffer);    
