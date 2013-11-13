@@ -33,8 +33,13 @@ set (HEADERS
     connection.h
     log.h
     nocopyable.h
+    notifier.h
+    signaler.h
     sockutil.h
+    spinlock.h
+    stringutil.h
     tcpserver.h
+    timer.h
     tnet.h 
     )
 

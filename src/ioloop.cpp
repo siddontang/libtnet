@@ -23,6 +23,8 @@ namespace tnet
      
         m_poller = new Poller(this); 
          
+        m_notifier = std::make_shared<Notifier>(std::bind(&IOLoop::onWake, this, _1));
+        
         m_events.resize(DefaultEventsCapacity, 0);
     }
     
@@ -38,7 +40,6 @@ namespace tnet
     {
         m_running = true;
 
-        m_notifier = std::make_shared<Notifier>(std::bind(&IOLoop::onWake, this, _1));
         m_notifier->start(this);
 
         run();

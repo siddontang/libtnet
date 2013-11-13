@@ -34,6 +34,9 @@ namespace tnet
         void send(int statusCode, const std::string& body);
         void send(int statusCode, const std::string& body, const std::map<std::string, std::string>& headers);
 
+        static void setMaxHeaderSize(size_t size) { ms_maxHeaderSize = size; }
+        static void setMaxBodySize(size_t size) { ms_maxBodySize = size; }
+
     private:
         static void initSettings();
 
@@ -74,6 +77,9 @@ namespace tnet
         //for parse http header
         std::string m_curField;
         bool m_lastWasValue;
+    
+        static size_t ms_maxHeaderSize;
+        static size_t ms_maxBodySize;
     };    
 }
 

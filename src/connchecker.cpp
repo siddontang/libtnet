@@ -9,7 +9,7 @@ using namespace std;
 
 namespace tnet
 {
-    const int DefaultInterval = 10 * 1000;
+    const int DefaultRepeat = 10 * 1000;
     const int DefaultStep = 1000;
     const int DefaultTimeout = 60;
     const int DefaultConnectTimeout = 20;
@@ -22,7 +22,7 @@ namespace tnet
         , m_timeout(DefaultTimeout)
         , m_connectTimeout(DefaultConnectTimeout)
     {
-        m_timer = std::make_shared<Timer>(std::bind(&ConnChecker::onCheck, this, _1), DefaultInterval, 0); 
+        m_timer = std::make_shared<Timer>(std::bind(&ConnChecker::onCheck, this, _1), DefaultRepeat, DefaultTimeout * 1000); 
     }
 
     ConnChecker::~ConnChecker()
@@ -54,7 +54,7 @@ namespace tnet
         m_timer->stop();
     }
 
-    void ConnChecker::setInterval(int repeat)
+    void ConnChecker::setRepeat(int repeat)
     {
         m_timer->reset(repeat, 0);    
     }

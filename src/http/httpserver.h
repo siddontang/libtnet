@@ -29,12 +29,6 @@ namespace tnet
 
         HttpServer(TcpServer* server);
         ~HttpServer();
-        
-        void setMaxHeaderSize(int headerSize) { m_maxHeaderSize = headerSize; }
-        void setMaxBodySize(int bodySize) { m_maxBodySize = bodySize; }
-
-        int getMaxHeaderSize() { return m_maxHeaderSize; }
-        int getMaxBodySize() { return m_maxBodySize; }
 
         int listen(const Address& addr);
 
@@ -56,9 +50,6 @@ namespace tnet
 
     private:
         TcpServer* m_server;
-    
-        int m_maxHeaderSize;
-        int m_maxBodySize;
     
         std::map<std::string, HttpCallback_t> m_httpCallbacks;        
 

@@ -32,6 +32,8 @@ namespace tnet
   
         void shutDown(); 
 
+        static void setMaxPayloadLen(size_t len) { ms_maxPayloadLen = len; }
+
     private:    
         int onHandshake(const ConnectionPtr_t& conn, const HttpRequest& request);
 
@@ -95,8 +97,8 @@ namespace tnet
         WsCallback_t m_func;
 
         int m_fd;
-    
-        static bool ms_maskOutgoing;
+
+        static size_t ms_maxPayloadLen;
     };    
 }
 

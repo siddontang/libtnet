@@ -9,6 +9,9 @@ using namespace std;
 
 namespace tnet
 {
+    size_t HttpConnection::ms_maxHeaderSize = 10 * 1024;
+    size_t HttpConnection::ms_maxBodySize = 10 * 1024 * 1024;
+
     struct http_parser_settings HttpConnection::ms_settings;
 
     HttpConnection::HttpConnection(HttpServer* server, const ConnectionPtr_t& conn)
@@ -162,7 +165,7 @@ namespace tnet
         
     int HttpConnection::handleBody(const char* at, size_t length)
     {
-        if(m_request.body.size() > (uint64_t)m_server->getMaxBodySize())
+        if(m_request.body.size() > ms_maxBodySize)
         {
             return -1;    
         }
@@ -192,7 +195,7 @@ namespace tnet
 
     bool HttpConnection::validHeaderSize()
     {
-        return (m_parser.nread <= (uint32_t)m_server->getMaxHeaderSize());
+        return (m_parser.nread <= (uint32_t)ms_maxHeaderSize);
     }
 
     void HttpConnection::onRead(const ConnectionPtr_t& conn, const char* buffer, size_t count)

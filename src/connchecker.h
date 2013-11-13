@@ -14,7 +14,7 @@ namespace tnet
         ConnChecker();
         ~ConnChecker();
 
-        void setInterval(int repeat);
+        void setRepeat(int repeat);
         void setStep(size_t step) { m_step = step; }
         
         //timeout are seconds

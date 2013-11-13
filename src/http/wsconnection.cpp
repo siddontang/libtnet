@@ -19,8 +19,7 @@ using namespace std::placeholders;
 
 namespace tnet
 {        
-    //chrome may not support masking, so we only can disable it
-    bool WsConnection::ms_maskOutgoing = false;
+    size_t WsConnection::ms_maxPayloadLen = 10 * 1024 * 1024;
 
     WsConnection::WsConnection(const ConnectionPtr_t& conn, const WsCallback_t& func)
     {
@@ -236,7 +235,7 @@ namespace tnet
     ssize_t WsConnection::handleFramePayloadLen(size_t payloadLen)
     {
         m_payloadLen = payloadLen;
-        
+       
         m_frame.reserve(payloadLen);
         m_frame.clear();
 
@@ -305,6 +304,11 @@ namespace tnet
         uint16_t payloadLen = *(uint16_t*)m_frame.data();
         //memcpy(&payloadLen, m_frame.data(), sizeof(uint16_t));
         
+        if(payloadLen > ms_maxPayloadLen)
+        {
+            return -1;    
+        }
+
         payloadLen = ntohs(payloadLen); 
 
         handleFramePayloadLen(payloadLen);
@@ -323,6 +327,11 @@ namespace tnet
         uint64_t payloadLen = *(uint64_t*)m_frame.data();
         //memcpy(&payloadLen, m_frame.data(), sizeof(uint64_t));
         
+        if(payloadLen > ms_maxPayloadLen)
+        {
+            return -1;
+        }
+
         //todo ntohl64
         payloadLen = be64toh(payloadLen);
         
@@ -505,7 +514,7 @@ namespace tnet
         
         buf.append((char*)&opcode, sizeof(opcode));
 
-        char mask = ms_maskOutgoing ? 0x80 : 0x00;
+        char mask = isMaskFrame() ? 0x80 : 0x00;
 
         size_t payloadLen = message.size();
 
@@ -531,7 +540,7 @@ namespace tnet
             buf.append((char*)&len, sizeof(uint64_t));
         }
 
-        if(ms_maskOutgoing)
+        if(isMaskFrame())
         {
             int randomKey = rand();
             char maskingKey[4];

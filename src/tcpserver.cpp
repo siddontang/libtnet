@@ -22,12 +22,18 @@ using namespace std;
 
 namespace tnet
 {
+    void dummyRunCallback(IOLoop*)
+    {
+    }
+
     TcpServer::TcpServer()
         : m_loop(0)
     {
         m_process = std::make_shared<Process>();
     
         m_running = false;
+    
+        m_runCallback = std::bind(&dummyRunCallback, _1);
     }
  
     TcpServer::~TcpServer()
@@ -73,8 +79,16 @@ namespace tnet
         
         m_running = true;
      
-        initSignaler();
-      
+     
+        m_loop->addCallback(std::bind(&TcpServer::onRun, this));
+
+        m_loop->start();
+    }
+
+    void TcpServer::onRun()
+    {
+        LOG_INFO("tcp server on run");
+
         m_connChecker = std::make_shared<ConnChecker>();
             
         for_each(m_acceptors.begin(), m_acceptors.end(), 
@@ -82,14 +96,15 @@ namespace tnet
             
         m_connChecker->start(m_loop);
 
+        initSignaler();
         m_signaler->start(m_loop);
 
-        m_loop->start(); 
+        m_runCallback(m_loop);
     }
 
     void TcpServer::start(size_t maxProcess)
     {
-        if(maxProcess > 1)
+        if(maxProcess > 0)
         {
             m_process->wait(maxProcess, std::bind(&TcpServer::run, this));   
         }
@@ -121,6 +136,8 @@ namespace tnet
     {
         LOG_INFO("stop server");
         m_process->stop(); 
+
+        onStop();
     }
 
     void TcpServer::onNewConnection(IOLoop* loop, int fd, const ConnEventCallback_t& callback)
@@ -152,5 +169,25 @@ namespace tnet
                 LOG_ERROR("invalid signal %d", signum);
                 break;
         }    
+    }
+
+    void TcpServer::setConnCheckRepeat(int repeat)
+    {
+        m_connChecker->setRepeat(repeat);    
+    }
+    
+    void TcpServer::setConnCheckStep(int step)
+    {
+        m_connChecker->setStep(step);
+    }
+    
+    void TcpServer::setConnTimeout(int timeout)
+    {
+        m_connChecker->setTimeout(timeout);
+    }
+
+    void TcpServer::setConnConnectTimeout(int timeout)
+    {
+        m_connChecker->setConnectTimeout(timeout);
     }
 }

@@ -58,6 +58,8 @@ namespace tnet
 
     typedef std::function<void (IOLoop*, int)> IOHandler_t;
     typedef std::function<void (IOLoop*, int)> NewConnCallback_t;
+   
+    typedef std::function<void (IOLoop*)> ServerRunCallback_t;
     
     class StackBuffer
     {

@@ -26,10 +26,19 @@ namespace tnet
         
         IOLoop* getLoop() { return m_loop; }
 
+        //repeat is milliseconds
+        void setConnCheckRepeat(int repeat);
+        void setConnCheckStep(int step);
+        void setConnTimeout(int timeout);
+        void setConnConnectTimeout(int timeout);
+
+        void setRunCallback(const ServerRunCallback_t& callback) { m_runCallback = callback; }
+
     private:
         void initSignaler();
         
         void run();
+        void onRun();
         void onStop();
         void onSignal(const SignalerPtr_t& signaler, int signum);
         void onNewConnection(IOLoop* loop, int fd, const ConnEventCallback_t& callback);
@@ -51,6 +60,8 @@ namespace tnet
 
         bool m_workerProc;
         bool m_running;
+    
+        ServerRunCallback_t m_runCallback;
     };
      
 }

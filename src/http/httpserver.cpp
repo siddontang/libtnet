@@ -14,9 +14,6 @@ using namespace std;
 
 namespace tnet
 {
-    const int DefaultMaxHeaderSize = 4 * 1024;
-    const int DefaultMaxBodySize = 1024 * 1024;
-
     static string rootPath = "/";
 
     void httpNotFoundCallback(const HttpConnectionPtr_t& conn, const HttpRequest& request)
@@ -34,8 +31,6 @@ namespace tnet
 
     HttpServer::HttpServer(TcpServer* server)
         : m_server(server)
-        , m_maxHeaderSize(DefaultMaxHeaderSize)
-        , m_maxBodySize(DefaultMaxBodySize)
     {
         HttpConnection::initSettings();
     
