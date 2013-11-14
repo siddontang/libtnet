@@ -114,49 +114,47 @@ namespace tnet
         /* F */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1
     };
         
-    std::string HttpUtil::unescape(const std::string & sSrc)
+    std::string HttpUtil::unescape(const std::string& src)
     {
-        if(sSrc.empty())
+        //for a esacep character, is %xx, min size is 3
+        if(src.size() <= 2)
         {
-            return "";    
+            return src;    
         }
 
         // Note from RFC1630:  "Sequences which start with a percent sign
         // but are not followed by two hexadecimal characters (0-9, A-F) are reserved
         // for future extension"
         
-        const unsigned char * pSrc = (const unsigned char *)sSrc.c_str();
-        const int SRC_LEN = sSrc.length();
-        const unsigned char * const SRC_END = pSrc + SRC_LEN;
-        const unsigned char * const SRC_LAST_DEC = SRC_END - 2;   // last decodable '%' 
+        string dest(src.size(), '\0');
 
-        char * const pStart = new char[SRC_LEN];
-        char * pEnd = pStart;
-
-        while (pSrc < SRC_LAST_DEC)
+        size_t i = 0;
+        size_t j = 0;
+        while(i < src.size() - 2)
         {
-            if (*pSrc == '%')
+            if(src[i] == '%')
             {
-                char dec1, dec2;
-                if (-1 != (dec1 = HEX2DEC[*(pSrc + 1)])
-                    && -1 != (dec2 = HEX2DEC[*(pSrc + 2)]))
+                char dec1 = HEX2DEC[src[i + 1]];
+                char dec2 = HEX2DEC[src[i + 2]];
+                if(dec1 != -1 && dec2 != -1)
                 {
-                    *pEnd++ = (dec1 << 4) + dec2;
-                    pSrc += 3;
-                    continue;
-                }
-            }
+                    dest[j++] = (dec1 << 4) + dec2;
+                    i += 3;
+                    continue;    
+                }           
+            }    
 
-            *pEnd++ = *pSrc++;
+            dest[j++] = src[i++];
         }
 
-        // the last 2- chars
-        while (pSrc < SRC_END)
-            *pEnd++ = *pSrc++;
+        while(i < src.size())
+        {
+            dest[j++] = src[i++];    
+        }
 
-        std::string sResult(pStart, pEnd);
-        delete [] pStart;
-        return sResult;
+        dest.resize(j);
+
+        return dest;
     }
 
     // Only alphanum is safe.
@@ -184,35 +182,34 @@ namespace tnet
         /* F */ 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0
     };
 
-    std::string HttpUtil::escape(const std::string & sSrc)
+    std::string HttpUtil::escape(const std::string & src)
     {
-        if(sSrc.empty())
+        if(src.empty())
         {
             return ""; 
         }
 
         const char DEC2HEX[16 + 1] = "0123456789ABCDEF";
-        const unsigned char * pSrc = (const unsigned char *)sSrc.c_str();
-        const int SRC_LEN = sSrc.length();
-        unsigned char * const pStart = new unsigned char[SRC_LEN * 3];
-        unsigned char * pEnd = pStart;
-        const unsigned char * const SRC_END = pSrc + SRC_LEN;
 
-        for (; pSrc < SRC_END; ++pSrc)
+        string dest(src.size() * 3, '\0');
+
+        size_t i = 0;
+        size_t j = 0;
+        for(;i < src.size(); ++i)
         {
-            if (SAFE[*pSrc]) 
-                *pEnd++ = *pSrc;
+            if(SAFE[src[i]])
+            {
+                dest[j++] = src[i];    
+            }    
             else
             {
-                // escape this char
-                *pEnd++ = '%';
-                *pEnd++ = DEC2HEX[*pSrc >> 4];
-                *pEnd++ = DEC2HEX[*pSrc & 0x0F];
+                dest[j++] = '%';
+                dest[j++] = DEC2HEX[src[i] >> 4];
+                dest[j++] = DEC2HEX[src[i] & 0x0F];    
             }
         }
 
-        std::string sResult((char *)pStart, (char *)pEnd);
-        delete [] pStart;
-        return sResult;
+        dest.resize(j);
+        return dest;
     }
 }
