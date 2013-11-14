@@ -1,6 +1,7 @@
 #include "httputil.h"
 #include <vector>
 #include <string>
+#include "stringutil.h"
 
 extern "C"
 {
@@ -210,6 +211,18 @@ namespace tnet
         }
 
         dest.resize(j);
+        return dest;
+    }
+
+    string HttpUtil::normalizeHeader(const string& src)
+    {
+        if(src.empty())
+        {
+            return src; 
+        }
+        
+        string dest = StringUtil::lower(src);
+        dest[0] = toupper(dest[0]);
         return dest;
     }
 }
