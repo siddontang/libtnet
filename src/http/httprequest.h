@@ -20,15 +20,19 @@ namespace tnet
         void clear();
         void parseUrl();
 
+
         std::string url;
         std::string body;
 
+        std::string schema;
+        
         std::string host;
         std::string path;
+        std::string query;
 
         std::map<std::string, std::string> headers;
 
-        std::map<std::string, std::string> params;
+        std::multimap<std::string, std::string> params;
         
         unsigned short majorVersion;
         unsigned short minorVersion;
@@ -37,8 +41,7 @@ namespace tnet
 
         uint16_t port;
 
-    private:
-        void parseQuery(const std::string& query);
+        void parseQuery();
     };
         
 }

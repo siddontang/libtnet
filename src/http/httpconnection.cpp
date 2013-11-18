@@ -155,7 +155,7 @@ namespace tnet
         m_request.minorVersion = m_parser.http_minor;
         m_request.method = (http_method)m_parser.method;
     
-        if(m_server->onHeader(m_request) != 0)
+        if(m_server->onAuth(m_request) != 0)
         {
             return -1;    
         }

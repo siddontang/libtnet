@@ -10,6 +10,8 @@ set (SRCS
     wsconnection.cpp
     )
 
+add_definitions(-DHTTP_PARSER_STRICT=0)
+
 include_directories(../)
 
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)

@@ -32,8 +32,8 @@ namespace tnet
 
         int listen(const Address& addr);
 
-        //call server receive full headers(include websocket)
-        void setHeaderCallback(const HeaderCallback_t& callback) { m_headerCallback = callback; }
+        //call when server receives full headers(include websocket) to auth request
+        void setAuthCallback(const AuthCallback_t& callback) { m_authCallback = callback; }
     
         void setHttpCallback(const std::string& path, const HttpCallback_t& callback);
         void setWsCallback(const std::string& path, const WsCallback_t& callback);
@@ -41,7 +41,7 @@ namespace tnet
     private:
         void onConnEvent(const ConnectionPtr_t&, ConnEvent, void* context);
     
-        int onHeader(const HttpRequest& request);
+        int onAuth(const HttpRequest& request);
         void onRequest(const HttpConnectionPtr_t& conn, const HttpRequest& request);
         void onWebsocket(const ConnectionPtr_t& conn, const HttpRequest& request, const char* buf, size_t count);
 
@@ -55,7 +55,7 @@ namespace tnet
 
         std::map<std::string, WsCallback_t> m_wsCallbacks;
 
-        HeaderCallback_t m_headerCallback;
+        AuthCallback_t m_authCallback;
     };
     
 }

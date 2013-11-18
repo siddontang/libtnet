@@ -31,8 +31,10 @@ namespace tnet
     void HttpRequest::clear()
     {
         url.clear();
+        schema.clear();
         host.clear();
         path.clear();
+        query.clear();
         body.clear();
         
         headers.clear();
@@ -41,7 +43,7 @@ namespace tnet
         majorVersion = 1;
         minorVersion = 1;
         method = HTTP_GET;        
-        port = 0;
+        port = 80;
     }
 
     void HttpRequest::parseUrl()
@@ -53,6 +55,11 @@ namespace tnet
             return;    
         }
 
+        if(u.field_set & (1 << UF_SCHEMA))
+        {
+            schema = url.substr(u.field_data[UF_SCHEMA].off, u.field_data[UF_SCHEMA].len);    
+        }
+        
         if(u.field_set & (1 << UF_HOST))
         {
             host = url.substr(u.field_data[UF_HOST].off, u.field_data[UF_HOST].len);    
@@ -64,7 +71,14 @@ namespace tnet
         }
         else
         {
-            port = 80;    
+            if(strcasecmp(schema.c_str(), "https") == 0 || strcasecmp(schema.c_str(), "wss") == 0)
+            {
+                port = 443;    
+            }
+            else
+            {
+                port = 80; 
+            }   
         }
 
         if(u.field_set & (1 << UF_PATH))
@@ -74,14 +88,12 @@ namespace tnet
 
         if(u.field_set & (1 << UF_QUERY))
         {
-            string query = url.substr(u.field_data[UF_QUERY].off, u.field_data[UF_QUERY].len);    
-        
-            parseQuery(query);            
+            query = url.substr(u.field_data[UF_QUERY].off, u.field_data[UF_QUERY].len);    
         } 
         
     }
 
-    void HttpRequest::parseQuery(const string& query)
+    void HttpRequest::parseQuery()
     {
         static string sep1 = "&";
         static string sep2 = "=";
@@ -108,7 +120,7 @@ namespace tnet
                 continue;    
             }
 
-            params[HttpUtil::unescape(key)] = HttpUtil::unescape(value);
+            params.insert(make_pair(HttpUtil::unescape(key), HttpUtil::unescape(value)));
         }
            
     }

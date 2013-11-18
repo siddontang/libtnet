@@ -36,7 +36,7 @@ namespace tnet
     
         m_httpCallbacks[rootPath] = std::bind(&httpNotFoundCallback, _1, _2);
     
-        m_headerCallback = std::bind(&dummyHeaderCallback, _1);
+        m_authCallback = std::bind(&dummyHeaderCallback, _1);
     }
    
     HttpServer::~HttpServer()
@@ -143,9 +143,9 @@ namespace tnet
         }
     }
 
-    int HttpServer::onHeader(const HttpRequest& request)
+    int HttpServer::onAuth(const HttpRequest& request)
     {
-        if(m_headerCallback(request) != 0)
+        if(m_authCallback(request) != 0)
         {
             return -1;         
         }    

@@ -13,6 +13,11 @@ using namespace std;
 
 namespace tnet
 {
+    void dummyConnEvent(const ConnectionPtr_t&, ConnEvent, void*)
+    {
+        
+    }
+
     const int MaxReadBuffer = 4096;
 
     Connection::Connection(IOLoop* loop, int fd)
@@ -20,11 +25,17 @@ namespace tnet
         , m_fd(fd)
         , m_status(None)
     {
+        m_callback = std::bind(&dummyConnEvent, _1, _2, _3);
     }
 
     Connection::~Connection()
     {
         LOG_INFO("connection destroyed %d", m_fd);
+    }
+
+    void Connection::clearEventCallback()
+    {
+        m_callback = std::bind(&dummyConnEvent, _1, _2, _3);
     }
 
     void Connection::updateActiveTime()

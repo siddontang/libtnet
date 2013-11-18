@@ -11,8 +11,15 @@ namespace tnet
         HttpResponse();
 
         typedef std::map<std::string, std::string> Headers_t;
-        HttpResponse(int code, const Headers_t& headers, const std::string& body = "");
+        HttpResponse(int code, const Headers_t& headers = Headers_t(), const std::string& body = "");
         ~HttpResponse();    
+
+        void clear()
+        {
+            statusCode = 200;
+            body.clear();
+            headers.clear();    
+        }
 
         void setContentType(const std::string& contentType);
         void setKeepAlive(bool on);

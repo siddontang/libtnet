@@ -30,6 +30,7 @@ namespace tnet
         int getSockFd() { return m_fd; }
 
         void setEventCallback(const ConnEventCallback_t& callback) { m_callback = callback; }
+        void clearEventCallback(); 
 
         //timeout is milliseconds, if timeout is 0, close immediately
         void shutDown(int timeout = 0);

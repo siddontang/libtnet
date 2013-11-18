@@ -39,7 +39,8 @@ namespace tnet
         str.append(buf, n);
     
         n = snprintf(buf, sizeof(buf), "%d", int(body.size()));
-        headers["Content-Length"] = string(buf, n);
+        static const string ContentLength = "Content-Length";
+        headers[ContentLength] = string(buf, n);
 
         map<string, string>::const_iterator it = headers.begin();
         while(it != headers.end())
