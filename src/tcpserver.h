@@ -35,8 +35,6 @@ namespace tnet
         void setRunCallback(const ServerRunCallback_t& callback) { m_runCallback = callback; }
 
     private:
-        void initSignaler();
-        
         void run();
         void onRun();
         void onStop();

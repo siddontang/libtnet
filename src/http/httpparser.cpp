@@ -1,23 +1,94 @@
 #include "httpparser.h"
 
-#include "httpreqeust.h"
-#include "httpresponse.h"
+#include "httputil.h"
+
+#include "log.h"
+
+using namespace std;
 
 namespace tnet
 {
-    class InitParserObj
+    struct http_parser_settings ms_settings;
+
+    class HttpParserSettings
     {
     public:
-        InitParserObj()
-        {
-            HttpParser::initSettings();    
-        }    
+        HttpParserSettings();
+
+        static int onMessageBegin(struct http_parser*);
+        static int onUrl(struct http_parser*, const char*, size_t);
+        static int onStatusComplete(struct http_parser*);
+        static int onHeaderField(struct http_parser*, const char*, size_t);
+        static int onHeaderValue(struct http_parser*, const char*, size_t);
+        static int onHeadersComplete(struct http_parser*);
+        static int onBody(struct http_parser*, const char*, size_t);
+        static int onMessageComplete(struct http_parser*); 
     };
 
-    static InitParserObj initObj;
-    
-    HttpParser::HttpParser(const PaserCallback_t& callback, enum http_parser_type type)
-        : m_callback(callback)
+    HttpParserSettings::HttpParserSettings()
+    {
+        ms_settings.on_message_begin = &HttpParserSettings::onMessageBegin;
+        ms_settings.on_url = &HttpParserSettings::onUrl;
+        ms_settings.on_status_complete = &HttpParserSettings::onStatusComplete;
+        ms_settings.on_header_field = &HttpParserSettings::onHeaderField;
+        ms_settings.on_header_value = &HttpParserSettings::onHeaderValue;
+        ms_settings.on_headers_complete = &HttpParserSettings::onHeadersComplete;
+        ms_settings.on_body = &HttpParserSettings::onBody;
+        ms_settings.on_message_complete = &HttpParserSettings::onMessageComplete;    
+    }    
+
+    static HttpParserSettings initObj;
+
+    int HttpParserSettings::onMessageBegin(struct http_parser* parser)
+    {
+        HttpParser* p = (HttpParser*)parser->data;
+        return p->onParser(HttpParser::Parser_MessageBegin, 0, 0);
+    }
+
+    int HttpParserSettings::onUrl(struct http_parser* parser, const char* at, size_t length)
+    {
+        HttpParser* p = (HttpParser*)parser->data;
+        return p->onParser(HttpParser::Parser_Url, at, length);
+    }
+
+    int HttpParserSettings::onStatusComplete(struct http_parser* parser)
+    {
+        HttpParser* p = (HttpParser*)parser->data;
+        return p->onParser(HttpParser::Parser_StatusComplete, 0, 0);
+    }
+
+    int HttpParserSettings::onHeaderField(struct http_parser* parser, const char* at, size_t length)
+    {
+        HttpParser* p = (HttpParser*)parser->data;
+        return p->onParser(HttpParser::Parser_HeaderField, at, length);
+    }
+
+    int HttpParserSettings::onHeaderValue(struct http_parser* parser, const char* at, size_t length)
+    {
+        HttpParser* p = (HttpParser*)parser->data;
+        return p->onParser(HttpParser::Parser_HeaderValue, at, length);
+    }
+
+    int HttpParserSettings::onHeadersComplete(struct http_parser* parser)
+    {
+        HttpParser* p = (HttpParser*)parser->data;
+        return p->onParser(HttpParser::Parser_HeadersComplete, 0, 0);
+    }
+
+    int HttpParserSettings::onBody(struct http_parser* parser, const char* at, size_t length)
+    {
+        HttpParser* p = (HttpParser*)parser->data;
+        return p->onParser(HttpParser::Parser_Body, at, length);
+    }
+
+    int HttpParserSettings::onMessageComplete(struct http_parser* parser)
+    {
+        HttpParser* p = (HttpParser*)parser->data;
+        return p->onParser(HttpParser::Parser_MessageComplete, 0, 0);
+    }
+
+
+    HttpParser::HttpParser(enum http_parser_type type)
     {
         http_parser_init(&m_parser, type);
 
@@ -31,96 +102,53 @@ namespace tnet
         
     }
 
-    void HttpParser::initSettings()
+    int HttpParser::onParser(Event event, const char* at, size_t length)
     {
-        ms_settings.on_message_begin = &HttpParser::onMessageBegin;
-        ms_settings.on_url = &HttpParser::onUrl;
-        ms_settings.on_status_complete = &HttpParser::onStatusComplete;
-        ms_settings.on_header_field = &HttpParser::onHeaderField;
-        ms_settings.on_header_value = &HttpParser::onHeaderValue;
-        ms_settings.on_headers_complete = &HttpParser::onHeadersComplete;
-        ms_settings.on_body = &HttpParser::onBody;
-        ms_settings.on_message_complete = &HttpParser::onMessageComplete;    
-    }    
+        switch(event)
+        {
+            case Parser_MessageBegin:
+                return handleMessageBegin();
+            case Parser_Url:
+                return onUrl(at, length);
+            case Parser_StatusComplete:
+                return 0;
+            case Parser_HeaderField:
+                return handleHeaderField(at, length);
+            case Parser_HeaderValue:
+                return handleHeaderValue(at, length);
+            case Parser_HeadersComplete:
+                return handleHeadersComplete();
+            case Parser_Body:
+                return onBody(at, length);
+            case Parser_MessageComplete:
+                return onMessageComplete();
+            default:
+                break;
+        }
 
-    int HttpParser::onMessageBegin(struct http_parser* parser)
-    {
-        HttpParser* p = (HttpParser*)parser->data;
-        
-        return p->handleMessageBegin();    
+        return 0;
     }
-
-    int HttpParser::onUrl(struct http_parser* parser, const char* at, size_t length)
-    {
-        HttpParser* p = (HttpParser*)parser->data;
-        return p->handleUrl(at, length);
-    }
-
-    int HttpParser::onStatusComplete(struct http_parser* parser)
-    {
-        HttpParser* p = (HttpParser*)parser->data;
-        return p->handleStatusComplete();
-    }
-
-    int HttpParser::onHeaderField(struct http_parser* parser, const char* at, size_t length)
-    {
-        HttpParser* p = (HttpParser*)parser->data;
-        return p->handleHeaderField(at, length);
-    }
-
-    int HttpParser::onHeaderValue(struct http_parser* parser, const char* at, size_t length)
-    {
-        HttpParser* p = (HttpParser*)parser->data;
-        return p->handleHeaderValue(at, length);
-    }
-
-    int HttpParser::onHeadersComplete(struct http_parser* parser)
-    {
-        HttpParser* p = (HttpParser*)parser->data;
-        return p->handleHeadersComplete();
-    }
-
-    int HttpParser::onBody(struct http_parser* parser, const char* at, size_t length)
-    {
-        HttpParser* p = (HttpParser*)parser->data;
-        return p->handleBody(at, length);
-    }
-
-    int HttpParser::onMessageComplete(struct http_parser* parser)
-    {
-        HttpParser* p = (HttpParser*)parser->data;
-        return p->handleMessageComplete();
-    }
-
 
     int HttpParser::handleMessageBegin()
     {
         m_curField.clear();
         m_curValue.clear();
         m_lastWasValue = true;
-        return m_callback(&m_parser, Parser_Begin, 0);    
-    }
         
-    int HttpParser::handleUrl(const char* at, size_t length)
-    {
-        StackBuffer buf(at, length);
-        return m_callback(&m_parser, Parser_Url, &buf);
-    }
-     
-    int HttpParser::handleStatusComplete()
-    {
-        return 0;
-    }
+        m_errorCode = 0;
+
+        return onMessageBegin();
+    }        
         
     int HttpParser::handleHeaderField(const char* at, size_t length)
     {
         if(m_lastWasValue)
         {
             if(!m_curField.empty())
-            {
-                pair<string, string> header = make_pair(m_curField, m_curValue);
-                m_callback(&m_parser, Parser_Header, &header);        
+            {  
+                onHeader(m_curField, m_curValue);
             }
+            
             m_curField.clear();    
             m_curValue.clear();
         }
@@ -142,60 +170,37 @@ namespace tnet
         
     int HttpParser::handleHeadersComplete()
     {
-        return m_callback(&m_parser, Parser_HeadersComplte, 0);
-    }
-        
-    int HttpParser::handleBody(const char* at, size_t length)
-    {
-        StackBuffer buffer(at, length);
-        return m_callback(&m_parser, Parser_Body, &buffer); 
-    }
-        
-    int HttpParser::handleMessageComplete()
-    {
-        return m_callback(&m_parser, Parser_Complete, 0);
-    }
-
-    HttpRequestParser::HttpRequestParser()
-        : m_parser(std::bind(&HttpRequestParser::onParser, this, _1, _2, _3))
-    {
-            
-    }
-
-    HttpRequestParser::~HttpRequestParser()
-    {
-        
-    }
-
-    int HttpRequestParser::onParser(struct http_parser* parser, ParserEvent event, void* context)
-    {
-        switch(event)
+        if(!m_curField.empty())
         {
-            case Parser_Begin:
-                m_request.clear();
-                break;    
-            case Parser_Url:
-                {
-                    StackBuffer* buf = (StackBuffer*)context;
-                    m_request.url.append(buf->buffer, buf->count);
-                }
-                break;
-            case Parser_Header:
-                {
-                    pair<string, string> header = *(pair<string, string>*)context;
-                    m_request.setHeader(header.first, header.second);    
-                } 
-                break;
-            case Parser_HeadersComplete:
-                break;
-            case Parser_Body:
-                {
-                    StackBuffer* buf = (StackBuffer*)context;
-                    m_request.body.append(buf->buffer, buf->count);    
-                }
-                break;
-            case Parser_Complete:
-                break;
+            string field = HttpUtil::normalizeHeader(m_curField); 
+            onHeader(field, m_curValue);    
         }    
+
+        return onHeadersComplete();
+    }
+
+    int HttpParser::execute(const char* buffer, size_t count)
+    {
+        int n = http_parser_execute(&m_parser, &ms_settings, buffer, count);
+        if(m_parser.upgrade)
+        {
+            onUpgrade(buffer + n, count -n); 
+            return 0;
+        }
+        else if(n != count)
+        {
+            int code = (m_errorCode != 0 ? m_errorCode : 400);
+            
+            HttpError error(code, http_errno_description((http_errno)m_parser.http_errno));
+
+            LOG_ERROR("parser error %s", error.message.c_str());
+            
+            onError(error);
+
+            return code;
+        }     
+
+        return 0;
     }
 }
+

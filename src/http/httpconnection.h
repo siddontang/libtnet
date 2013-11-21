@@ -9,6 +9,7 @@ extern "C"
 }
 
 #include "tnet_http.h"
+#include "httpparser.h"
 #include "httprequest.h"
 
 namespace tnet
@@ -17,14 +18,16 @@ namespace tnet
     class HttpRequest;
     class HttpResponse;
 
-    //for http inner use
-    class HttpConnection : public nocopyable
+    //http server connection
+    class HttpConnection : public HttpParser
                      , public std::enable_shared_from_this<HttpConnection> 
     {
     public:
         friend class HttpServer;
 
-        HttpConnection(HttpServer* server, const ConnectionPtr_t& conn);
+        typedef std::function<void (const HttpConnectionPtr_t&, const HttpRequest&, RequestEvent, const void*)> RequestCallback_t;
+        HttpConnection(const ConnectionPtr_t& conn, const RequestCallback_t& callback);
+
         ~HttpConnection();
 
         int getSockFd() { return m_fd; }
@@ -34,50 +37,35 @@ namespace tnet
         void send(int statusCode, const std::string& body);
         void send(int statusCode, const std::string& body, const std::map<std::string, std::string>& headers);
 
+        //after is milliseconds
+        void shutDown(int after);
+
+        ConnectionPtr_t lockConn() { return m_conn.lock(); }
+        WeakConnectionPtr_t getConn() { return m_conn; }
+
         static void setMaxHeaderSize(size_t size) { ms_maxHeaderSize = size; }
         static void setMaxBodySize(size_t size) { ms_maxBodySize = size; }
-
-    private:
-        static void initSettings();
-
-        static int onMessageBegin(struct http_parser*);
-        static int onUrl(struct http_parser*, const char*, size_t);
-        static int onStatusComplete(struct http_parser*);
-        static int onHeaderField(struct http_parser*, const char*, size_t);
-        static int onHeaderValue(struct http_parser*, const char*, size_t);
-        static int onHeadersComplete(struct http_parser*);
-        static int onBody(struct http_parser*, const char*, size_t);
-        static int onMessageComplete(struct http_parser*);
     
-        int handleMessageBegin();
-        int handleUrl(const char*, size_t);
-        int handleStatusComplete();
-        int handleHeaderField(const char*, size_t);
-        int handleHeaderValue(const char*, size_t);
-        int handleHeadersComplete();
-        int handleBody(const char*, size_t);
-        int handleMessageComplete();
+    private:
+        int onMessageBegin();
+        int onUrl(const char* at, size_t length);
+        int onHeader(const std::string& field, const std::string& value);
+        int onHeadersComplete();
+        int onBody(const char* at, size_t length);
+        int onMessageComplete();
+        int onUpgrade(const char* at, size_t length);
+        int onError(const HttpError& error);
 
-        bool validHeaderSize();
-
-        void onRead(const ConnectionPtr_t& conn, const char* buffer, size_t count);
-
-    private:    
-        static struct http_parser_settings ms_settings;
-         
-        HttpServer* m_server;
-
+        void onConnEvent(const ConnectionPtr_t& conn, ConnEvent event, const void* context);
+    
+    private:
         std::weak_ptr<Connection> m_conn;
         int m_fd;
-
-        struct http_parser m_parser;
-
-        HttpRequest m_request;
-
-        //for parse http header
-        std::string m_curField;
-        bool m_lastWasValue;
+        
+        HttpRequest m_request;    
     
+        RequestCallback_t m_callback;
+
         static size_t ms_maxHeaderSize;
         static size_t ms_maxBodySize;
     };    

@@ -1,9 +1,12 @@
 #include "process.h"
 
+#include <vector>
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <sys/signalfd.h>
 
+#include "signaler.h"
 #include "log.h"
 
 using namespace std;
@@ -13,7 +16,9 @@ namespace tnet
     Process::Process()
         : m_running(false)
     {
-        m_main = getpid();     
+        m_main = getpid();
+        vector<int> signums{SIGTERM};
+        m_fd = Signaler::createSignalFd(signums);
     }
 
     Process::~Process()
@@ -33,6 +38,7 @@ namespace tnet
         {
             //child
             m_children.clear();
+            close(m_fd);
             return getpid();    
         }
         else
@@ -80,6 +86,7 @@ namespace tnet
             }    
             else
             {
+                checkStop();
                 sleep(1);
                 continue;
             }
@@ -90,8 +97,31 @@ namespace tnet
 
     void Process::stop()
     {
+        LOG_INFO("stop child process");
         m_running = false;
         for_each_all(m_children, std::bind(::kill, _1, SIGTERM));    
     }
 
+    void Process::checkStop()
+    {
+        struct signalfd_siginfo fdsi;
+        ssize_t s = read(m_fd, &fdsi, sizeof(fdsi));
+ 
+        if(s != sizeof(fdsi))
+        {
+            //no signal, 
+            return;    
+        }
+
+        int signum = fdsi.ssi_signo;
+        switch(signum)
+        {
+            case SIGTERM:
+                stop();
+                break;
+            default:
+                LOG_INFO("signum %d", signum);
+                break;    
+        }
+    }
 }

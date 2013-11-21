@@ -223,6 +223,15 @@ namespace tnet
         
         string dest = StringUtil::lower(src);
         dest[0] = toupper(dest[0]);
+        
+        for(size_t i = 1; i < dest.size(); ++i)
+        {
+            if(dest[i - 1] == '-')
+            {
+                dest[i] = toupper(dest[i]);    
+            }    
+        }
+
         return dest;
     }
 }

@@ -15,11 +15,14 @@ namespace tnet
         Signaler(const std::vector<int>& signums, const SignalHandler_t& handler);
         ~Signaler();
 
+        static int createSignalFd(const std::vector<int>& signums);
+
         void start(IOLoop* loop);
         void stop();
 
+        int fd() { return m_fd; }
+
     private:
-        void resetFd(const std::vector<int>& signums);
         void onSignal(IOLoop*, int);
 
     private:

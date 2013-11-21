@@ -19,8 +19,9 @@ namespace tnet
     {
     public:
         friend class HttpServer;
+        friend class WsClient;
 
-        WsConnection(const ConnectionPtr_t& conn, const WsCallback_t& func);
+        WsConnection(const ConnectionPtr_t& conn, const WsCallback_t& callback);
         ~WsConnection();
 
         int getSockFd() const { return m_fd; }
@@ -35,13 +36,12 @@ namespace tnet
         static void setMaxPayloadLen(size_t len) { ms_maxPayloadLen = len; }
 
     private:    
-        int onHandshake(const ConnectionPtr_t& conn, const HttpRequest& request);
-
+        void onConnEvent(const ConnectionPtr_t& conn, ConnEvent event, const void*);
+ 
+        void onOpen(const void* context);
+        void onError();
+               
         ssize_t onRead(const ConnectionPtr_t& conn, const char* data, size_t count);
-
-
-        void handleError(const ConnectionPtr_t& conn, int statusCode, const std::string& message = "");
-        int checkHeader(const ConnectionPtr_t& conn, const HttpRequest& request);
 
         bool isFinalFrame() { return m_final; }
         bool isMaskFrame() { return m_mask; }
@@ -94,7 +94,7 @@ namespace tnet
     
         std::string m_cache;
     
-        WsCallback_t m_func;
+        WsCallback_t m_callback;
 
         int m_fd;
 

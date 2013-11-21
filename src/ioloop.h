@@ -23,7 +23,8 @@ namespace tnet
         int updateHandler(int fd, int events);
         int removeHandler(int fd);  
 
-        void runAfter(int timeout, const Callback_t& callback);
+        //after is milliseconds
+        TimerPtr_t runAfter(int after, const Callback_t& callback);
 
         //this only thread safe
         void addCallback(const Callback_t& callback);

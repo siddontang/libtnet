@@ -4,7 +4,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-
+#include <sys/uio.h>
 #include "ioloop.h"
 #include "log.h"
 #include "sockutil.h"
@@ -13,7 +13,7 @@ using namespace std;
 
 namespace tnet
 {
-    void dummyConnEvent(const ConnectionPtr_t&, ConnEvent, void*)
+    void dummyConnEvent(const ConnectionPtr_t&, ConnEvent, const void*)
     {
         
     }
@@ -129,7 +129,7 @@ namespace tnet
         }
     }
 
-    void Connection::shutDown(int timeout)
+    void Connection::shutDown(int after)
     {
         if(m_status == Disconnecting || m_status == Disconnected)
         {
@@ -138,14 +138,14 @@ namespace tnet
 
         m_status = Disconnecting;
 
-        if(timeout == 0)
+        if(after == 0)
         {
             handleClose();    
         }    
         else
         {
             ConnectionPtr_t conn = shared_from_this();
-            m_loop->runAfter(timeout, std::bind(&Connection::handleClose, conn));    
+            m_loop->runAfter(after, std::bind(&Connection::handleClose, conn));    
         }
     }
 
@@ -213,20 +213,43 @@ namespace tnet
 
     void Connection::handleWrite()
     {
+        handleWrite(string());
+    }
+
+    void Connection::handleWrite(const string& data)
+    {
         if(m_status != Connected)
         {
             return;    
         }    
 
-        if(m_sendBuffer.empty())
+        if(m_sendBuffer.empty() && data.empty())
         {
             m_loop->updateHandler(m_fd, TNET_READ);
             return;    
         }
 
-        //to ignore signal pipe error
-        int n = ::send(m_fd, m_sendBuffer.data(), m_sendBuffer.size(), MSG_NOSIGNAL);
-        if(n == int(m_sendBuffer.size()))
+        size_t totalSize = m_sendBuffer.size() + data.size();
+        int niov = m_sendBuffer.empty() ? 1 : 2;
+        int i = 0;
+
+        struct iovec iov[niov];
+        if(!m_sendBuffer.empty()) 
+        {
+            iov[i].iov_base = (void*)m_sendBuffer.data();
+            iov[i].iov_len = m_sendBuffer.size();
+            ++i;    
+        }
+
+        if(!data.empty())
+        {
+            iov[i].iov_base = (void*)data.data();
+            iov[i].iov_len = data.size();
+            ++i;    
+        }
+
+        ssize_t n = writev(m_fd, iov, niov);
+        if(n == totalSize)
         {
             string().swap(m_sendBuffer);    
         
@@ -245,6 +268,9 @@ namespace tnet
             {
                 //try write later, can enter here?
                 LOG_INFO("write %s", errorMsg(err));
+
+                m_sendBuffer.append(data);
+
                 return;   
             }    
             else
@@ -256,7 +282,18 @@ namespace tnet
         }
         else
         {
-            m_sendBuffer = m_sendBuffer.substr(n);
+            if(m_sendBuffer.size() < n)
+            {
+                n -= m_sendBuffer.size();
+
+                m_sendBuffer = data.substr(n); 
+            }
+            else
+            {
+                m_sendBuffer = m_sendBuffer.substr(n);
+                m_sendBuffer += data;    
+            }
+            
             updateActiveTime();
         }
     }
@@ -283,23 +320,16 @@ namespace tnet
         m_callback(shared_from_this(), Conn_CloseEvent, 0);
     }
 
-    void Connection::send(const string& data)
+    int Connection::send(const string& data)
     {
         if(m_status != Connected)
         {
-            return;    
+            LOG_INFO("send error");
+            return -1;    
         }    
-
-        if(m_sendBuffer.empty())
-        {
-            m_sendBuffer = data;
-        }
-        else
-        {
-            m_sendBuffer += data;
-        }
-
-        handleWrite();
+        
+        handleWrite(data);
+        return 0;
     }
 }   
 

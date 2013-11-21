@@ -32,9 +32,11 @@ namespace tnet
         void setEventCallback(const ConnEventCallback_t& callback) { m_callback = callback; }
         void clearEventCallback(); 
 
-        //timeout is milliseconds, if timeout is 0, close immediately
-        void shutDown(int timeout = 0);
-        void send(const std::string& data);
+        //after is milliseconds, if after is 0, close immediately
+        void shutDown(int after = 0);
+        
+        //-1 when connection is not connected
+        int send(const std::string& data);
 
         void onEstablished();
         void connect(const Address& addr);
@@ -48,6 +50,7 @@ namespace tnet
         void onHandler(IOLoop*, int);
         void handleRead();
         void handleWrite();
+        void handleWrite(const std::string& data);
         void handleError();
         void handleClose();
         void handleConnect();

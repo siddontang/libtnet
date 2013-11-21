@@ -9,6 +9,8 @@
 #include "httpresponse.h"
 #include "wsconnection.h"
 #include "connection.h"
+#include "httpparser.h"
+#include "wsutil.h"
 
 using namespace std;
 
@@ -24,19 +26,10 @@ namespace tnet
         conn->send(resp);      
     } 
 
-    int dummyHeaderCallback(const HttpRequest&)
-    {
-        return 0;    
-    }
-
     HttpServer::HttpServer(TcpServer* server)
         : m_server(server)
     {
-        HttpConnection::initSettings();
-    
         m_httpCallbacks[rootPath] = std::bind(&httpNotFoundCallback, _1, _2);
-    
-        m_authCallback = std::bind(&dummyHeaderCallback, _1);
     }
    
     HttpServer::~HttpServer()
@@ -49,14 +42,16 @@ namespace tnet
         return m_server->listen(addr, std::bind(&HttpServer::onConnEvent, this, _1, _2, _3));     
     }
 
-    void HttpServer::onConnEvent(const ConnectionPtr_t& conn, ConnEvent event, void* context)
+    void HttpServer::onConnEvent(const ConnectionPtr_t& conn, ConnEvent event, const void* context)
     {
         switch(event)
         {
             case Conn_EstablishedEvent:
                 {
-                    HttpConnectionPtr_t httpConn(new HttpConnection(this, conn));
-                    conn->setEventCallback(std::bind(&HttpServer::onHttpConnEvent, this, httpConn, _1, _2, _3));
+                    HttpConnectionPtr_t httpConn = std::make_shared<HttpConnection>(conn, 
+                        std::bind(&HttpServer::onRequest, this, _1, _2, _3, _4));
+            
+                    conn->setEventCallback(std::bind(&HttpConnection::onConnEvent, httpConn, _1, _2, _3));
                 }
                 break;
             default:
@@ -64,92 +59,90 @@ namespace tnet
                 return;
         }
     }
-
-    void HttpServer::onHttpConnEvent(const HttpConnectionPtr_t& httpConn, const ConnectionPtr_t& conn, ConnEvent event, void* context)
-    {
-        switch(event)
-        {
-            case Conn_ReadEvent:
-                {
-                    StackBuffer* b = static_cast<StackBuffer*>(context);
-                    httpConn->onRead(conn, b->buffer, b->count);
-                }
-                break;
-            default:
-                break;    
-        }    
-    }
-
-    void HttpServer::onWsConnEvent(const WsConnectionPtr_t& wsConn, const ConnectionPtr_t& conn, ConnEvent event, void* context)
-    {
-        switch(event)
-        {
-            case Conn_ReadEvent:
-                {
-                    StackBuffer* b = static_cast<StackBuffer*>(context);
-                    wsConn->onRead(conn, b->buffer, b->count);
-                }
-                break;
-            default:
-                break;    
-        }
-    }
-
+    
     void HttpServer::setHttpCallback(const string& path, const HttpCallback_t& callback)
     {
         m_httpCallbacks[path] = callback;    
-    }
-
-    void HttpServer::onRequest(const HttpConnectionPtr_t& conn, const HttpRequest& request)
-    {
-        map<string, HttpCallback_t>::iterator iter = m_httpCallbacks.find(request.path);
-        if(iter == m_httpCallbacks.end())
-        {
-            m_httpCallbacks[rootPath](conn, request);  
-        }
-        else
-        {
-            (iter->second)(conn, request);    
-        }
     }
 
     void HttpServer::setWsCallback(const string& path, const WsCallback_t& callback)
     {
         m_wsCallbacks[path] = callback;    
     }
+    
+    void HttpServer::onError(const HttpConnectionPtr_t& conn, const HttpError& error)
+    {
+        conn->send(error.statusCode, error.message); 
+        conn->shutDown(1000);
+    }
 
-    void HttpServer::onWebsocket(const ConnectionPtr_t& conn, const HttpRequest& request, const char* buffer, size_t count)
+    void HttpServer::onRequest(const HttpConnectionPtr_t& conn, const HttpRequest& request, RequestEvent event, const void* context)
+    {
+        switch(event)
+        {
+            case Request_Upgrade:
+                onWebsocket(conn, request, context);
+                break;
+            case Request_Error:
+                onError(conn, *(HttpError*)context);
+                break;
+            case Request_Complete:
+                {
+                    map<string, HttpCallback_t>::iterator iter = m_httpCallbacks.find(request.path);
+                    if(iter == m_httpCallbacks.end())
+                    {
+                        m_httpCallbacks[rootPath](conn, request);  
+                    }
+                    else
+                    {
+                        (iter->second)(conn, request);    
+                    }
+    
+                }
+                break;
+            default:
+                LOG_ERROR("invalid request event %d", event);
+                break;
+        }
+    }
+
+
+    void HttpServer::onWebsocket(const HttpConnectionPtr_t& conn, const HttpRequest& request, const void* context)
     {
         map<string, WsCallback_t>::iterator iter = m_wsCallbacks.find(request.path);
         if(iter == m_wsCallbacks.end())
         {
-            conn->shutDown();
+            onError(conn, 404);
         }
         else
         {
-            WsConnectionPtr_t wsConn(new WsConnection(conn, iter->second));
+            const StackBuffer* buffer = (const StackBuffer*)context;
 
-            if(wsConn->onHandshake(conn, request) == 0)
-            { 
-                wsConn->onRead(conn, buffer, count);
-                conn->setEventCallback(std::bind(&HttpServer::onWsConnEvent, this, wsConn, _1, _2, _3));
-            }
-            else
+            ConnectionPtr_t c = conn->lockConn();
+            if(!c)
             {
-                conn->shutDown();    
+                return;    
             }
+
+            WsConnectionPtr_t wsConn(new WsConnection(c, iter->second));
+
+            HttpResponse resp;
+            HttpError error = WsUtil::handshake(request, resp); 
+
+            if(error.statusCode != 0)
+            {
+                onError(conn, error);
+                return;    
+            }
+
+            c->send(resp.dump());
+
+            wsConn->onOpen(&request);
+
+            wsConn->onRead(c, buffer->buffer, buffer->count);
+            c->setEventCallback(std::bind(&WsConnection::onConnEvent, wsConn, _1, _2, _3));
            
             return;
         }
-    }
-
-    int HttpServer::onAuth(const HttpRequest& request)
-    {
-        if(m_authCallback(request) != 0)
-        {
-            return -1;         
-        }    
-
-        return 0;
     }
 }

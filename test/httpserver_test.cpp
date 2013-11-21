@@ -35,10 +35,11 @@ void onHandler(const HttpConnectionPtr_t& conn, const HttpRequest& request)
     conn->send(resp);
 }
 
+
 int main()
 {
-    Log::rootLog().setLevel(Log::ERROR);
-     
+//    Log::rootLog().setLevel(Log::ERROR);
+    
     TcpServer s;
 
     HttpServer httpd(&s);

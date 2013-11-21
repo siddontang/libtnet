@@ -44,16 +44,6 @@ namespace tnet
         }
     }
 
-    void TcpServer::initSignaler()
-    {
-        vector<int> signums;
-        
-        signums.push_back(SIGINT);
-        signums.push_back(SIGTERM);
-
-        m_signaler = std::make_shared<Signaler>(signums, std::bind(&TcpServer::onSignal, this, _1, _2)); 
-    }
-
     int TcpServer::listen(const Address& addr, const ConnEventCallback_t& callback)
     {
         LOG_INFO("listen %s:%d", addr.ipstr().c_str(), addr.port());
@@ -96,7 +86,9 @@ namespace tnet
             
         m_connChecker->start(m_loop);
 
-        initSignaler();
+        vector<int> signums{SIGINT, SIGTERM};
+        m_signaler = std::make_shared<Signaler>(signums, std::bind(&TcpServer::onSignal, this, _1, _2)); 
+        
         m_signaler->start(m_loop);
 
         m_runCallback(m_loop);
@@ -116,6 +108,7 @@ namespace tnet
 
     void TcpServer::onStop()
     {
+        LOG_INFO("tcp server on stop");
         if(!m_running)
         {
             return;    
@@ -142,7 +135,6 @@ namespace tnet
 
     void TcpServer::onNewConnection(IOLoop* loop, int fd, const ConnEventCallback_t& callback)
     {
-        LOG_INFO("new connection %d", fd); 
         ConnectionPtr_t conn = std::make_shared<Connection>(loop, fd);
         
         conn->setEventCallback(callback);
@@ -156,7 +148,6 @@ namespace tnet
 
     void TcpServer::onSignal(const SignalerPtr_t& signaler, int signum)
     {
-        LOG_INFO("signum %d", signum);
         switch(signum)
         {
             case SIGINT:

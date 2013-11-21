@@ -58,18 +58,22 @@ namespace tnet
 
     void HttpResponse::setContentType(const std::string& contentType)
     {
-        headers["Content-Type"] = contentType;    
+        static const string ContentTypeKey = "Content-Type";
+        headers[ContentTypeKey] = contentType;    
     }
 
     void HttpResponse::setKeepAlive(bool on)
     {
+        static const string ConnectionKey = "Connection";
         if(on)
         {
-            headers["Connection"] = "Keep-Alive";    
+            static const string KeepAliveValue = "Keep-Alive";
+            headers[ConnectionKey] = KeepAliveValue;    
         }    
         else
         {
-            headers["Connection"] = "close";    
+            static const string CloseValue = "close";
+            headers[ConnectionKey] = CloseValue;    
         }
     }
     
@@ -79,7 +83,8 @@ namespace tnet
         struct tm t; 
         gmtime_r(&now, &t);
         char buf[128];
-        strftime(buf, sizeof buf, "%a, %d %b %Y %H:%M:%S %Z", &t);
-        headers["Date"] = buf;
+        int n = strftime(buf, sizeof buf, "%a, %d %b %Y %H:%M:%S %Z", &t);
+        static const string DateKey = "Date";
+        headers[DateKey] = string(buf, n);
     }
 }

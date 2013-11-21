@@ -2,12 +2,17 @@ set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 
 set (SRCS
     http_parser.c
+    httpclient.cpp
+    httpclientconn.cpp
     httpconnection.cpp
+    httpparser.cpp
     httprequest.cpp
     httpresponse.cpp
     httpserver.cpp
     httputil.cpp
+    wsclient.cpp
     wsconnection.cpp
+    wsutil.cpp
     )
 
 add_definitions(-DHTTP_PARSER_STRICT=0)

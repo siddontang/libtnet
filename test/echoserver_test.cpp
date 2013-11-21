@@ -9,13 +9,13 @@
 using namespace std;
 using namespace tnet;
 
-void onConnEvent(const ConnectionPtr_t& conn, ConnEvent event, void* context)
+void onConnEvent(const ConnectionPtr_t& conn, ConnEvent event, const void* context)
 {
     switch(event)
     {
         case Conn_ReadEvent:
             {
-                StackBuffer* buffer = static_cast<StackBuffer*>(context);
+                const StackBuffer* buffer = static_cast<const StackBuffer*>(context);
                 conn->send(string(buffer->buffer, buffer->count));
             }
             break;

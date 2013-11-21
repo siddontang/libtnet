@@ -1,23 +1,28 @@
 #pragma once
 
-#include "tnet_http.h"
+#include <string>
 
-extern "C"
-{
-#include "http_parser.h"    
-}
+#include "tnet_http.h"
 
 namespace tnet
 {
     class WsClient
     {
     public:
-        WsClient();
+        WsClient(IOLoop* loop);
         ~WsClient();
 
-        void connect(const Address& addr, const WsCallback_t& callback);
+        void connect(const std::string& url, const WsCallback_t& callback);
+        void connect(const std::string& url, const Headers_t& headers, const WsCallback_t& callback);
 
     private:
-        struct http_parser m_parser;         
+        void connect(HttpRequest& request, const WsCallback_t& callback);
+
+        void onConnEvent(const ConnectionPtr_t& conn, ConnEvent event, const void* context,
+                         const std::string& requestData, const WsCallback_t& callback);
+        void onResponse(const HttpClientConnPtr_t&, const HttpResponse&, ResponseEvent, const WsCallback_t&);
+
+    private:
+        IOLoop* m_loop;
     };    
 }

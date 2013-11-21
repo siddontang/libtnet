@@ -22,6 +22,7 @@ namespace tnet
     {
         majorVersion = 1;
         minorVersion = 1;
+        method = HTTP_GET;
     }
    
     HttpRequest::~HttpRequest()
@@ -48,6 +49,11 @@ namespace tnet
 
     void HttpRequest::parseUrl()
     {
+        if(!schema.empty())
+        {
+            return;    
+        }
+
         struct http_parser_url u;
         if(http_parser_parse_url(url.c_str(), url.size(), 0, &u) != 0)
         {
@@ -95,6 +101,11 @@ namespace tnet
 
     void HttpRequest::parseQuery()
     {
+        if(query.empty() || !params.empty())
+        {
+            return;    
+        }
+
         static string sep1 = "&";
         static string sep2 = "=";
 
@@ -124,4 +135,60 @@ namespace tnet
         }
            
     }
+
+    static const string HostKey = "Host";
+    static const string ContentLengthKey = "Content-Length";
+    
+    string HttpRequest::dump()
+    {
+        string str;
+        
+        parseUrl();
+        
+        char buf[1024];
+        
+        int n = 0;
+        if(query.empty())
+        {
+            n = snprintf(buf, sizeof(buf), "%s %s HTTP/%d.%d\r\n", 
+                http_method_str(method), path.c_str(), majorVersion, minorVersion);    
+        }
+        else
+        {
+            n = snprintf(buf, sizeof(buf), "%s %s?%s HTTP/%d.%d\r\n", 
+                http_method_str(method), path.c_str(), query.c_str(), majorVersion, minorVersion);    
+        }
+
+        str.append(buf, n);
+
+        if(port == 80 || port == 443)
+        {
+            headers[HostKey] = host;    
+        }
+        else
+        {
+            n = snprintf(buf, sizeof(buf), "%s:%d", host.c_str(), port);
+            headers[HostKey] = string(buf, n);   
+        }
+
+        if(method == HTTP_POST || method == HTTP_PUT)
+        {
+            n = snprintf(buf, sizeof(buf), "%d", int(body.size()));
+            headers[ContentLengthKey] = string(buf, n);
+        }
+
+        Headers_t::const_iterator iter = headers.begin();
+        while(iter != headers.end())
+        {
+            int n = snprintf(buf, sizeof(buf), "%s: %s\r\n", iter->first.c_str(), iter->second.c_str());
+            str.append(buf, n);
+            ++iter;    
+        }
+
+        str.append("\r\n");
+
+        str.append(body);
+
+        return str;
+    } 
 }

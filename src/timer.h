@@ -18,6 +18,8 @@ namespace tnet
 
         void reset(int repeat, int after);
 
+        int fd() { return m_fd; }
+
     private:
         void onTimer(IOLoop* loop, int events);
 

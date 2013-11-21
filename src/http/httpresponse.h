@@ -3,6 +3,8 @@
 #include <string>
 #include <map>
 
+#include "tnet_http.h"
+
 namespace tnet
 {
     class HttpResponse
@@ -10,7 +12,6 @@ namespace tnet
     public:
         HttpResponse();
 
-        typedef std::map<std::string, std::string> Headers_t;
         HttpResponse(int code, const Headers_t& headers = Headers_t(), const std::string& body = "");
         ~HttpResponse();    
 
@@ -31,7 +32,8 @@ namespace tnet
    
         int statusCode;
         std::string body;
-        std::map<std::string, std::string> headers;
+        
+        Headers_t headers;
     };
     
 }

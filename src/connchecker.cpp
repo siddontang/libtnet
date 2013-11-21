@@ -73,14 +73,11 @@ namespace tnet
             return;
         }
 
-        LOG_INFO("%d %d", m_conns.size(), fd);
         m_conns[fd] = conn;
     }
 
     void ConnChecker::onCheck(const TimerPtr_t& timer)
     {
-        LOG_INFO("check"); 
-        
         struct timespec t;
         clock_gettime(CLOCK_MONOTONIC, &t);
         

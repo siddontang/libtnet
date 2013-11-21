@@ -9,6 +9,8 @@ extern "C"
 #include "http_parser.h"
 }
 
+#include "tnet_http.h"
+
 namespace tnet
 {
     class HttpRequest
@@ -19,7 +21,7 @@ namespace tnet
 
         void clear();
         void parseUrl();
-
+        std::string dump();
 
         std::string url;
         std::string body;
@@ -30,9 +32,9 @@ namespace tnet
         std::string path;
         std::string query;
 
-        std::map<std::string, std::string> headers;
+        Headers_t headers;
 
-        std::multimap<std::string, std::string> params;
+        Params_t params;
         
         unsigned short majorVersion;
         unsigned short minorVersion;

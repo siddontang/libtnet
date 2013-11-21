@@ -2,6 +2,7 @@
 
 #include <sys/epoll.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <algorithm>
 
 #include "poller.h"
@@ -14,6 +15,17 @@ using namespace std;
 
 namespace tnet
 {
+    class IgnoreSigPipe
+    {
+    public:
+        IgnoreSigPipe()
+        {
+            signal(SIGPIPE, SIG_IGN);    
+        }    
+    };
+
+    static IgnoreSigPipe initObj;
+
     const int DefaultEventsCapacity = 1024;
     const int MaxPollWaitTime = 1 * 1000;
 
@@ -131,11 +143,12 @@ namespace tnet
         timer->stop();
     }
 
-    void IOLoop::runAfter(int timeout, const Callback_t& callback)
+    TimerPtr_t IOLoop::runAfter(int after, const Callback_t& callback)
     {
         TimerPtr_t timer = std::make_shared<Timer>(
-            std::bind(&onTimerHandler, _1, callback), timeout, 0);    
+            std::bind(&onTimerHandler, _1, callback), after, 0);    
         timer->start(this);
+        return timer;
     }
 
     void IOLoop::addCallback(const Callback_t& callback)

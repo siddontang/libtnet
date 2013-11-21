@@ -19,19 +19,20 @@ namespace tnet
         : m_loop(0)
         , m_fd(-1)
         , m_running(false)
+        , m_signums{signum}
         , m_handler(handler)
     {
-        vector<int> signums(1, signum);
-        resetFd(signums);
+        m_fd = createSignalFd(m_signums);
     }
 
     Signaler::Signaler(const vector<int>& signums, const SignalHandler_t& handler)
         : m_loop(0)
         , m_fd(-1)
         , m_running(false)
+        , m_signums(signums)
         , m_handler(handler)
     {
-        resetFd(signums);
+        m_fd = createSignalFd(m_signums);
     }
 
     Signaler::~Signaler()
@@ -41,32 +42,32 @@ namespace tnet
             close(m_fd);    
         } 
     } 
-   
-    void Signaler::resetFd(const vector<int>& signums)
+  
+    int Signaler::createSignalFd(const std::vector<int>& signums)
     {
-        m_signums = signums;
-
         sigset_t mask;
         
         sigemptyset(&mask);
-        for(size_t i = 0; i < m_signums.size(); ++i)
+        for(size_t i = 0; i < signums.size(); ++i)
         {
-            sigaddset(&mask, m_signums[i]);
+            sigaddset(&mask, signums[i]);
         }
 
         if(sigprocmask(SIG_BLOCK, &mask, NULL) < 0)
         {
             LOG_ERROR("sigprocmask error");
-            return;  
+            return -1;  
         } 
 
-        m_fd = signalfd(-1, &mask, SFD_NONBLOCK | SFD_CLOEXEC);
-        if(m_fd < 0)
+        int fd = signalfd(-1, &mask, SFD_NONBLOCK | SFD_CLOEXEC);
+        if(fd < 0)
         {
             LOG_ERROR("signalfd error %s", errorMsg(errno));    
         }
+   
+        return fd;
     }
-
+   
     void Signaler::start(IOLoop* loop)
     {
         assert(m_fd > 0);

@@ -21,12 +21,12 @@ namespace tnet
 {        
     size_t WsConnection::ms_maxPayloadLen = 10 * 1024 * 1024;
 
-    WsConnection::WsConnection(const ConnectionPtr_t& conn, const WsCallback_t& func)
+    WsConnection::WsConnection(const ConnectionPtr_t& conn, const WsCallback_t& callback)
     {
         m_fd = conn->getSockFd();
 
         m_conn = conn;
-        m_func = func;
+        m_callback = callback;
     
         m_payloadLen = 0;
         m_final = 0;
@@ -38,125 +38,39 @@ namespace tnet
     WsConnection::~WsConnection()
     {
     }
-    
-    void WsConnection::handleError(const ConnectionPtr_t& conn, int statusCode, const string& message)
+ 
+    void WsConnection::onOpen(const void* context)
     {
-        HttpResponse resp;
-        resp.statusCode = statusCode;
-        resp.body = message;
-
-        conn->send(resp.dump());
-    
-        conn->shutDown();
-    }
-
-    static string upgradeKey = "Upgrade";
-    static string upgradeValue = "websocket";
-    static string connectionKey = "Connection";
-    static string connectionValue = "upgrade";
-    static string wsVersionKey = "Sec-WebSocket-Version";
-    static string wsProtocolKey = "Sec-WebSocket-Protocol";
-    static string wsAcceptKey = "Sec-WebSocket-Accept";
-
-    int WsConnection::checkHeader(const ConnectionPtr_t& conn, const HttpRequest& request)
-    {
-        if(request.method != HTTP_GET)
-        {
-            handleError(conn, 405);
-
-            return -1;    
-        }
-        
-        map<string, string>::const_iterator iter = request.headers.find(upgradeKey);
-        if(iter == request.headers.end() || StringUtil::lower(iter->second) != upgradeValue)
-        {
-            handleError(conn, 400, "Can \"Upgrade\" only to \"websocket\"");
-            return -1;    
-        }
-
-        iter = request.headers.find(connectionKey);
-        if(iter == request.headers.end() || StringUtil::lower(iter->second).find(connectionValue) == string::npos)
-        {
-            handleError(conn, 400, "\"Connection\" must be \"upgrade\"");
-            return -1;
-        }
-
-        iter = request.headers.find(wsVersionKey);
-        bool validVersion = false;
-        if(iter != request.headers.end())
-        {
-            int version = atoi(iter->second.c_str());
-            if(version == 13 || version == 7 || version == 8)
-            {
-                validVersion = true;    
-            }    
-        }
-
-        if(!validVersion)
-        {
-            handleError(conn, 426, "Sec-WebSocket-Version: 13");
-            return -1;    
-        }
-
-        return 0;
-    }
-
-    static string wsKey = "Sec-WebSocket-Key";
-    static string wsMagicKey = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-    
-    static string calcAcceptKey(const HttpRequest& request)
-    {
-        map<string, string>::const_iterator iter = request.headers.find(wsKey);
-        if(iter == request.headers.end())
-        {
-            return "";
-        }  
-
-        string key = iter->second + wsMagicKey;
-
-        return StringUtil::base64Encode(StringUtil::sha1Bin(key));
-    }
-
-    int WsConnection::onHandshake(const ConnectionPtr_t& conn, const HttpRequest& request)
-    {
-        if(checkHeader(conn, request) != 0)
-        {
-            return -1;    
-        }    
-
-        HttpResponse resp;
-        resp.statusCode = 101;
-        resp.headers[upgradeKey] = upgradeValue;
-        resp.headers[connectionKey] = upgradeKey;
-        resp.headers[wsAcceptKey] = calcAcceptKey(request);
-
-        map<string, string>::const_iterator iter = request.headers.find(wsProtocolKey);
-        
-        if(iter != request.headers.end())
-        {
-            static string sep = ",";
-            vector<string> subs = StringUtil::split(iter->second, sep);
-
-            //now we only choose first subprotocol
-            if(!subs.empty())
-            {
-                resp.headers[wsProtocolKey] = subs[0];
-            }
-        }
-
-        conn->send(resp.dump());
-
         m_status = FrameStart;
+        
+        m_callback(shared_from_this(), Ws_OpenEvent, context);    
+    }
 
-        m_func(shared_from_this(), Ws_OpenEvent, string());
+    void WsConnection::onError()
+    {
+        m_callback(shared_from_this(), Ws_ErrorEvent, 0);    
+    }
 
-        return 0;
+    void WsConnection::onConnEvent(const ConnectionPtr_t& conn, ConnEvent event, const void* context)
+    {
+        switch(event)
+        {
+            case Conn_ReadEvent:
+                {
+                    const StackBuffer* buffer = (const StackBuffer*)context;
+                    onRead(conn, buffer->buffer, buffer->count);
+                }
+                break;    
+            case Conn_WriteCompleteEvent:
+                break;
+            default:
+                break;
+        }
     }
 
 #define HANDLE(func) \
     ret = func(data + readLen, count - readLen); \
-    readLen += (ret > 0 ? ret : 0);
-
+    readLen += (ret > 0 ? ret : 0); 
 
     ssize_t WsConnection::onRead(const ConnectionPtr_t& conn, const char* data, size_t count)
     {
@@ -204,7 +118,7 @@ namespace tnet
             LOG_ERROR("onReadError");
 
             m_status = FrameError;
-            m_func(shared_from_this(), Ws_ErrorEvent, string());
+            m_callback(shared_from_this(), Ws_ErrorEvent, 0);
             
             //an error occur, only to shutdown connection
             conn->shutDown();    
@@ -239,8 +153,14 @@ namespace tnet
         m_frame.reserve(payloadLen);
         m_frame.clear();
 
-        m_status = isMaskFrame() ? FrameMaskingKey : FrameData;    
-        
+        if(m_payloadLen == 0)
+        {
+            m_status = FrameFinal;
+        }
+        else
+        {
+            m_status = isMaskFrame() ? FrameMaskingKey : FrameData;    
+        }
         return 0;
     }
 
@@ -380,8 +300,8 @@ namespace tnet
 
     ssize_t WsConnection::handleFrameData(const ConnectionPtr_t& conn)
     {
-        uint8_t opcode;
-        string data;
+        uint8_t opcode = m_opcode;
+        string data = m_frame;
 
         if(isControlFrame())
         {
@@ -451,17 +371,17 @@ namespace tnet
         {
             case 0x1:
                 //utf-8 data
-                m_func(shared_from_this(), Ws_MessageEvent, data);
+                m_callback(shared_from_this(), Ws_MessageEvent, (void*)&data);
                 break;    
             case 0x2:
                 //binary data
-                m_func(shared_from_this(), Ws_MessageEvent, data);
+                m_callback(shared_from_this(), Ws_MessageEvent, (void*)&data);
                 break;
             case 0x8:
                 //clsoe
-                m_func(shared_from_this(), Ws_CloseEvent, string());
+                m_callback(shared_from_this(), Ws_CloseEvent, 0);
                 
-                conn->shutDown();
+                conn->shutDown(500);
                 break;
             case 0x9:
                 //ping
@@ -469,12 +389,15 @@ namespace tnet
                 break;
             case 0xA:
                 //pong
-                m_func(shared_from_this(), Ws_PongEvent, data);
+                m_callback(shared_from_this(), Ws_PongEvent, (void*)&data);
                 break;
             default:
                 //error
+                LOG_ERROR("invalid opcode %d", opcode);
                 return -1;
         }    
+
+        return 0;
     } 
 
     void WsConnection::ping(const string& message)
@@ -514,7 +437,9 @@ namespace tnet
         
         buf.append((char*)&opcode, sizeof(opcode));
 
-        char mask = isMaskFrame() ? 0x80 : 0x00;
+        //char mask = isMaskFrame() ? 0x80 : 0x00;
+        //chrome not support mask
+        char mask = 0x00;
 
         size_t payloadLen = message.size();
 
@@ -540,7 +465,7 @@ namespace tnet
             buf.append((char*)&len, sizeof(uint64_t));
         }
 
-        if(isMaskFrame())
+        if(mask)
         {
             int randomKey = rand();
             char maskingKey[4];

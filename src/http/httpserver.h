@@ -31,22 +31,17 @@ namespace tnet
         ~HttpServer();
 
         int listen(const Address& addr);
-
-        //call when server receives full headers(include websocket) to auth request
-        void setAuthCallback(const AuthCallback_t& callback) { m_authCallback = callback; }
     
         void setHttpCallback(const std::string& path, const HttpCallback_t& callback);
         void setWsCallback(const std::string& path, const WsCallback_t& callback);
 
     private:
-        void onConnEvent(const ConnectionPtr_t&, ConnEvent, void* context);
+        void onConnEvent(const ConnectionPtr_t&, ConnEvent, const void* context);
     
-        int onAuth(const HttpRequest& request);
-        void onRequest(const HttpConnectionPtr_t& conn, const HttpRequest& request);
-        void onWebsocket(const ConnectionPtr_t& conn, const HttpRequest& request, const char* buf, size_t count);
+        void onRequest(const HttpConnectionPtr_t& conn, const HttpRequest& request, RequestEvent event, const void* context);
+        void onWebsocket(const HttpConnectionPtr_t& conn, const HttpRequest& request, const void* context);
 
-        void onHttpConnEvent(const HttpConnectionPtr_t&, const ConnectionPtr_t&, ConnEvent, void* context);
-        void onWsConnEvent(const WsConnectionPtr_t&, const ConnectionPtr_t&, ConnEvent, void* context);
+        void onError(const HttpConnectionPtr_t& conn, const HttpError& error);
 
     private:
         TcpServer* m_server;
@@ -54,8 +49,6 @@ namespace tnet
         std::map<std::string, HttpCallback_t> m_httpCallbacks;        
 
         std::map<std::string, WsCallback_t> m_wsCallbacks;
-
-        AuthCallback_t m_authCallback;
     };
     
 }
