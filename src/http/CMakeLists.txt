@@ -27,13 +27,16 @@ target_link_libraries(tnet_http tnet)
 install(TARGETS tnet_http DESTINATION lib)
 
 set (HEADERS
+    httpclient.h
     httpconnection.h
     http_parser.h
+    httpparser.h
     httprequest.h
     httpresponse.h
     httpserver.h
     httputil.h
     tnet_http.h
+    wsclient.h
     wsconnection.h
     )
 

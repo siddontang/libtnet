@@ -42,7 +42,6 @@ namespace tnet
         Ws_OpenEvent,
         Ws_CloseEvent, 
         Ws_MessageEvent,
-        Ws_WriteCompleteEvent,
         Ws_PongEvent,    
         Ws_ErrorEvent,
     };

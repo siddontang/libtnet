@@ -29,6 +29,11 @@ namespace tnet
         void ping(const std::string& message);
         void send(const std::string& message, bool binary);
         void send(const std::string& message);
+
+        //callback likes HttpConnection send callback 
+        void send(const std::string& message, bool binary, const Callback_t& callback);
+        void send(const std::string& message, const Callback_t& callback);
+ 
         void close();
   
         void shutDown(); 
@@ -95,6 +100,8 @@ namespace tnet
         std::string m_cache;
     
         WsCallback_t m_callback;
+        
+        Callback_t m_sendCallback;
 
         int m_fd;
 

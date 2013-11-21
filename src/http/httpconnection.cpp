@@ -13,16 +13,21 @@ namespace tnet
     size_t HttpConnection::ms_maxHeaderSize = 80 * 1024;
     size_t HttpConnection::ms_maxBodySize = 10 * 1024 * 1024;
     
+    static void dummyCallback()
+    {}
+
     HttpConnection::HttpConnection(const ConnectionPtr_t& conn, const RequestCallback_t& callback)
         : HttpParser(HTTP_REQUEST)
         , m_conn(conn)
         , m_callback(callback)
     {
         m_fd = conn->getSockFd();
+        m_sendCallback = std::bind(&dummyCallback);
     }
 
     HttpConnection::~HttpConnection()
     {
+        LOG_INFO("httpconnection destroyed");
     }
 
     void HttpConnection::onConnEvent(const ConnectionPtr_t& conn, ConnEvent event, const void* context)
@@ -37,6 +42,10 @@ namespace tnet
                 }
                 break;   
             case Conn_WriteCompleteEvent:
+                {
+                    m_sendCallback();
+                    m_sendCallback = std::bind(&dummyCallback);
+                }
                 break;
             default:
                 break; 
@@ -89,6 +98,30 @@ namespace tnet
         resp.headers = headers;
 
         send(resp);
+    }
+
+    void HttpConnection::send(HttpResponse& resp, const Callback_t& callback)
+    {
+        m_sendCallback = callback;
+        send(resp);    
+    }
+    
+    void HttpConnection::send(int statusCode, const Callback_t& callback)
+    {
+        m_sendCallback = callback;
+        send(statusCode);
+    }
+        
+    void HttpConnection::send(int statusCode, const std::string& body, const Callback_t& callback)
+    {
+        m_sendCallback = callback;
+        send(statusCode, body);
+    }
+        
+    void HttpConnection::send(int statusCode, const std::string& body, const std::map<std::string, std::string>& headers, const Callback_t& callback)
+    {
+        m_sendCallback = callback;
+        send(statusCode, body, headers);
     }
 
     int HttpConnection::onMessageBegin()

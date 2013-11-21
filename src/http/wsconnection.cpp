@@ -21,6 +21,9 @@ namespace tnet
 {        
     size_t WsConnection::ms_maxPayloadLen = 10 * 1024 * 1024;
 
+    static void dummyCallback()
+    {}
+
     WsConnection::WsConnection(const ConnectionPtr_t& conn, const WsCallback_t& callback)
     {
         m_fd = conn->getSockFd();
@@ -33,10 +36,13 @@ namespace tnet
         m_opcode = 0;
         m_mask = 0;
         m_lastOpcode = 0;
+    
+        m_sendCallback = std::bind(&dummyCallback);
     }
 
     WsConnection::~WsConnection()
     {
+        LOG_INFO("wsconnection destroyed");
     }
  
     void WsConnection::onOpen(const void* context)
@@ -62,6 +68,10 @@ namespace tnet
                 }
                 break;    
             case Conn_WriteCompleteEvent:
+                {
+                    m_sendCallback();
+                    m_sendCallback = std::bind(&dummyCallback);    
+                }
                 break;
             default:
                 break;
@@ -416,6 +426,18 @@ namespace tnet
 
         //for utf-8, we assume message is already utf-8
         sendFrame(true, opcode, message);
+    }
+
+    void WsConnection::send(const string& message, const Callback_t& callback)
+    {
+        m_sendCallback = callback;
+        send(message);    
+    }
+
+    void WsConnection::send(const string& message, bool binary, const Callback_t& callback)
+    {
+        m_sendCallback = callback;
+        send(message, binary);    
     }
 
     void WsConnection::close()

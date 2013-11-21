@@ -10,6 +10,11 @@ using namespace tnet;
 
 int i = 0;
 
+void onWriteComplete(int j)
+{
+    LOG_INFO("write complete %d", j);    
+}
+
 void onWsConnEvent(const WsConnectionPtr_t& conn, WsEvent event, const void* context)
 {
     switch(event)
@@ -30,9 +35,9 @@ void onWsConnEvent(const WsConnectionPtr_t& conn, WsEvent event, const void* con
                 char buf[1024];
                 int n = snprintf(buf, sizeof(buf), "Hello World %d", i++);
                     
-                conn->send(string(buf, n));
+                conn->send(string(buf, n), std::bind(&onWriteComplete, i));
             
-                if(i > 0)
+                if(i > 10)
                 {
                     conn->close();    
                 }

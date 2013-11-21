@@ -37,6 +37,13 @@ namespace tnet
         void send(int statusCode, const std::string& body);
         void send(int statusCode, const std::string& body, const std::map<std::string, std::string>& headers);
 
+        //send completely callback, called when all send buffers are send.
+        //If there was a previous callback, that callback will be overwritten
+        void send(HttpResponse& resp, const Callback_t& callback);
+        void send(int statusCode, const Callback_t& callback);
+        void send(int statusCode, const std::string& body, const Callback_t& callback);
+        void send(int statusCode, const std::string& body, const std::map<std::string, std::string>& headers, const Callback_t& callback);
+
         //after is milliseconds
         void shutDown(int after);
 
@@ -65,6 +72,8 @@ namespace tnet
         HttpRequest m_request;    
     
         RequestCallback_t m_callback;
+
+        Callback_t m_sendCallback;
 
         static size_t ms_maxHeaderSize;
         static size_t ms_maxBodySize;
