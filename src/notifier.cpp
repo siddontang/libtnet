@@ -24,6 +24,8 @@ namespace tnet
 
     Notifier::~Notifier()
     {
+        LOG_INFO("destroyed %d", m_fd);
+        
         if(m_fd > 0)
         {
             close(m_fd);    

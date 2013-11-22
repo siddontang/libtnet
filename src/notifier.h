@@ -15,7 +15,9 @@ namespace tnet
         void stop();
     
         void notify();
-       
+      
+        IOLoop* loop() { return m_loop; }
+         
     private:
         void onEvent(IOLoop* loop, int events);   
      

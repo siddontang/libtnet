@@ -22,6 +22,8 @@ namespace tnet
 
         int fd() { return m_fd; }
 
+        IOLoop* loop() { return m_loop; }
+
     private:
         void onSignal(IOLoop*, int);
 

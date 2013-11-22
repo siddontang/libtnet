@@ -18,6 +18,7 @@ namespace tnet
         : m_loop(0)
         , m_running(false)
         , m_handler(handler)
+        , m_repeated(false)
     {
         m_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
         if(m_fd < 0)
@@ -31,7 +32,7 @@ namespace tnet
 
     Timer::~Timer()
     {
-        LOG_INFO("destroyed");
+        LOG_INFO("destroyed %d", m_fd);
         if(m_fd > 0)
         {
             close(m_fd);
@@ -78,6 +79,8 @@ namespace tnet
             return;    
         }
 
+        m_repeated = (repeat > 0); 
+
         struct itimerspec t;
         if(repeat > 0)
         {
@@ -109,6 +112,12 @@ namespace tnet
         else
         {
             m_handler(timer);     
+    
+            if(!isRepeated())
+            {
+                //timer is an once timer, here stop 
+                timer->stop();    
+            }
         }
     }
 }

@@ -20,6 +20,10 @@ namespace tnet
 
         int fd() { return m_fd; }
 
+        IOLoop* loop() { return m_loop; }
+
+        bool isRepeated() { return m_repeated; }
+    
     private:
         void onTimer(IOLoop* loop, int events);
 
@@ -29,6 +33,7 @@ namespace tnet
         IOLoop* m_loop;
         int m_fd;
         bool m_running;
+        bool m_repeated;
         
         TimerHandler_t m_handler;
     };
