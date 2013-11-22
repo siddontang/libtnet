@@ -129,7 +129,7 @@ namespace tnet
             HttpResponse resp;
             HttpError error = WsUtil::handshake(request, resp); 
 
-            if(error.statusCode != 0)
+            if(error.statusCode != 200)
             {
                 onError(conn, error);
                 return;    

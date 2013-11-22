@@ -115,7 +115,7 @@ namespace tnet
             return HttpError(426, "Sec-WebSocket-Version: 13");
         }
 
-        return HttpError(0);
+        return HttpError(200);
     }
     
     static string calcAcceptKey(const HttpRequest& request)
@@ -134,7 +134,7 @@ namespace tnet
     HttpError WsUtil::handshake(const HttpRequest& request, HttpResponse& resp)
     {
         HttpError error = checkHeader(request);
-        if(error.statusCode != 0)
+        if(error.statusCode != 200)
         {
             return error;    
         }

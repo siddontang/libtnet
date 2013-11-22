@@ -27,12 +27,12 @@ namespace tnet
     class HttpError
     {
     public:
-        HttpError(int code = 0, const std::string& m = std::string())
+        HttpError(int code = 200, const std::string& m = std::string())
             : statusCode(code)
             , message(m)
         {}    
 
-        //0 for no error
+        //200 for no error
         int statusCode;
         std::string message;
     };
