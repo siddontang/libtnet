@@ -12,6 +12,7 @@ namespace tnet
         WsClient(IOLoop* loop);
         ~WsClient();
 
+        //now only support ip:port    
         void connect(const std::string& url, const WsCallback_t& callback);
         void connect(const std::string& url, const Headers_t& headers, const WsCallback_t& callback);
 
