@@ -89,7 +89,7 @@ namespace tnet
         send(resp);    
     }
 
-    void HttpConnection::send(int statusCode, const string& body, const map<string, string>& headers)
+    void HttpConnection::send(int statusCode, const string& body, const Headers_t& headers)
     {
         HttpResponse resp;
         resp.statusCode = statusCode;
@@ -118,7 +118,7 @@ namespace tnet
         send(statusCode, body);
     }
         
-    void HttpConnection::send(int statusCode, const std::string& body, const std::map<std::string, std::string>& headers, const Callback_t& callback)
+    void HttpConnection::send(int statusCode, const std::string& body, const Headers_t& headers, const Callback_t& callback)
     {
         m_sendCallback = callback;
         send(statusCode, body, headers);
@@ -145,7 +145,7 @@ namespace tnet
         }
     
  
-        m_request.headers[field] = value;    
+        m_request.headers.insert(make_pair(field, value));    
         return 0;
     }
 

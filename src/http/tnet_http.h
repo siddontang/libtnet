@@ -2,6 +2,7 @@
 
 #include <string>
 #include <map>
+#include <string.h>
 
 #include "tnet.h"
 
@@ -85,6 +86,14 @@ namespace tnet
 
     typedef std::function<void (const HttpResponse&)> ResponseCallback_t;
 
-    typedef std::map<std::string, std::string> Headers_t;
-    typedef std::map<std::string, std::string> Params_t;
+    struct CaseKeyCmp
+    {
+        bool operator() (const std::string& p1, const std::string& p2) const
+        {
+            return strcasecmp(p1.c_str(), p2.c_str()) < 0;
+        }    
+    };
+
+    typedef std::multimap<std::string, std::string, CaseKeyCmp> Headers_t;
+    typedef std::multimap<std::string, std::string> Params_t;
 }

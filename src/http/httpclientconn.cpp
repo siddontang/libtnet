@@ -49,7 +49,7 @@ namespace tnet
             return -1;    
         }
 
-        m_response.headers[field] = value;    
+        m_response.headers.insert(make_pair(field, value));    
         return 0;
     }
 

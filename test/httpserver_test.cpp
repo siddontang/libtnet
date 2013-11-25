@@ -38,7 +38,7 @@ void onHandler(const HttpConnectionPtr_t& conn, const HttpRequest& request)
 
 int main()
 {
-//    Log::rootLog().setLevel(Log::ERROR);
+    Log::rootLog().setLevel(Log::ERROR);
     
     TcpServer s;
 
@@ -50,7 +50,7 @@ int main()
 
     LOG_INFO("start tcp server");
 
-    s.start(8);
+    s.start(4);
 
     LOG_INFO("stop server");
 

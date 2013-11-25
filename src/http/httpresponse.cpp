@@ -40,10 +40,10 @@ namespace tnet
     
         n = snprintf(buf, sizeof(buf), "%d", int(body.size()));
         static const string ContentLength = "Content-Length";
-        headers[ContentLength] = string(buf, n);
+        headers.insert(make_pair(ContentLength, string(buf, n)));
 
-        map<string, string>::const_iterator it = headers.begin();
-        while(it != headers.end())
+        auto it = headers.cbegin();
+        while(it != headers.cend())
         {
             n = snprintf(buf, sizeof(buf), "%s: %s\r\n", it->first.c_str(), it->second.c_str());
             str.append(buf, n);
@@ -59,7 +59,7 @@ namespace tnet
     void HttpResponse::setContentType(const std::string& contentType)
     {
         static const string ContentTypeKey = "Content-Type";
-        headers[ContentTypeKey] = contentType;    
+        headers.insert(make_pair(ContentTypeKey, contentType));    
     }
 
     void HttpResponse::setKeepAlive(bool on)
@@ -68,12 +68,12 @@ namespace tnet
         if(on)
         {
             static const string KeepAliveValue = "Keep-Alive";
-            headers[ConnectionKey] = KeepAliveValue;    
+            headers.insert(make_pair(ConnectionKey, KeepAliveValue));    
         }    
         else
         {
             static const string CloseValue = "close";
-            headers[ConnectionKey] = CloseValue;    
+            headers.insert(make_pair(ConnectionKey, CloseValue));    
         }
     }
     
@@ -85,6 +85,6 @@ namespace tnet
         char buf[128];
         int n = strftime(buf, sizeof buf, "%a, %d %b %Y %H:%M:%S %Z", &t);
         static const string DateKey = "Date";
-        headers[DateKey] = string(buf, n);
+        headers.insert(make_pair(DateKey, string(buf, n)));
     }
 }

@@ -68,15 +68,14 @@ namespace tnet
 
     int WsUtil::buildRequest(HttpRequest& req)
     {
-        req.headers[upgradeKey] = upgradeValue;
-        req.headers[connectionKey] = connectionValue;
+        req.headers.insert(make_pair(upgradeKey, upgradeValue));
+        req.headers.insert(make_pair(connectionKey, connectionValue));
 
-        req.headers[wsProtocolKey] = wsProtocolValue;
+        req.headers.insert(make_pair(wsProtocolKey, wsProtocolValue));
         
-        static const string wsVersionValue = "13";
-        req.headers[wsVersionKey] = wsVersionValue;
-        req.headers[wsKey] = calcKey(); 
-        req.headers[originKey] = getOrigin(req);
+        req.headers.insert(make_pair(wsVersionKey, wsVersionValue));
+        req.headers.insert(make_pair(wsKey, calcKey())); 
+        req.headers.insert(make_pair(originKey, getOrigin(req)));
         return 0;
     }
     
@@ -87,7 +86,7 @@ namespace tnet
             return HttpError(405);    
         }
         
-        Headers_t::const_iterator iter = request.headers.find(upgradeKey);
+        auto iter = request.headers.find(upgradeKey);
         if(iter == request.headers.end() || strcasestr(iter->second.c_str(), upgradeValue.c_str()) == NULL)
         {
             return HttpError(400, "Can \"Upgrade\" only to \"websocket\"");
@@ -120,7 +119,7 @@ namespace tnet
     
     static string calcAcceptKey(const HttpRequest& request)
     {
-        map<string, string>::const_iterator iter = request.headers.find(wsKey);
+        auto iter = request.headers.find(wsKey);
         if(iter == request.headers.end())
         {
             return "";
@@ -140,11 +139,11 @@ namespace tnet
         }
 
         resp.statusCode = 101;
-        resp.headers[upgradeKey] = upgradeValue;
-        resp.headers[connectionKey] = upgradeKey;
-        resp.headers[wsAcceptKey] = calcAcceptKey(request);
+        resp.headers.insert(make_pair(upgradeKey, upgradeValue));
+        resp.headers.insert(make_pair(connectionKey, upgradeKey));
+        resp.headers.insert(make_pair(wsAcceptKey, calcAcceptKey(request)));
 
-        Headers_t::const_iterator iter = request.headers.find(wsProtocolKey);
+        auto iter = request.headers.find(wsProtocolKey);
         
         if(iter != request.headers.end())
         {
@@ -154,7 +153,7 @@ namespace tnet
             //now we only choose first subprotocol
             if(!subs.empty())
             {
-                resp.headers[wsProtocolKey] = subs[0];
+                resp.headers.insert(make_pair(wsProtocolKey, subs[0]));
             }
         }
 

@@ -161,24 +161,28 @@ namespace tnet
 
         str.append(buf, n);
 
+        headers.erase(HostKey);
+
         if(port == 80 || port == 443)
         {
-            headers[HostKey] = host;    
+            headers.insert(make_pair(HostKey, host));    
         }
         else
         {
             n = snprintf(buf, sizeof(buf), "%s:%d", host.c_str(), port);
-            headers[HostKey] = string(buf, n);   
+            headers.insert(make_pair(HostKey, string(buf, n)));   
         }
 
         if(method == HTTP_POST || method == HTTP_PUT)
         {
+            headers.erase(ContentLengthKey);
+
             n = snprintf(buf, sizeof(buf), "%d", int(body.size()));
-            headers[ContentLengthKey] = string(buf, n);
+            headers.insert(make_pair(ContentLengthKey, string(buf, n)));
         }
 
-        Headers_t::const_iterator iter = headers.begin();
-        while(iter != headers.end())
+        auto iter = headers.cbegin();
+        while(iter != headers.cend())
         {
             int n = snprintf(buf, sizeof(buf), "%s: %s\r\n", iter->first.c_str(), iter->second.c_str());
             str.append(buf, n);
