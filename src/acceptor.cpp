@@ -106,6 +106,9 @@ namespace tnet
         else
         {
             LOG_INFO("onAccept %d", sockFd);
+            
+            SockUtil::setNoDelay(sockFd, true);
+
             m_callback(loop, sockFd);    
         } 
     }

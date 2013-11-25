@@ -78,6 +78,7 @@ namespace tnet
         }
         else
         {
+            SockUtil::setNoDelay(sockFd, true);
             return ret;
         }
     }
