@@ -11,7 +11,7 @@ namespace tnet
 {
     const int DefaultRepeat = 10 * 1000;
     const int DefaultStep = 1000;
-    const int DefaultTimeout = 60;
+    const int DefaultTimeout = 24 * 60 * 60;
     const int DefaultConnectTimeout = 20;
 
     ConnChecker::ConnChecker()

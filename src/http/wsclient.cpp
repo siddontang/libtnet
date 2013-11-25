@@ -57,7 +57,7 @@ namespace tnet
         int fd = SockUtil::create();
         
         ConnectionPtr_t conn = std::make_shared<Connection>(m_loop, fd);
-        conn->setEventCallback(std::bind(&WsClient::onConnEvent, this, _1, _2, _3, request.dump(), callback));
+        conn->setEventCallback(std::bind(&WsClient::onConnEvent, shared_from_this(), _1, _2, _3, request.dump(), callback));
         conn->connect(addr);     
     }
 
@@ -87,7 +87,7 @@ namespace tnet
             case Conn_ConnectEvent:
                 {
                     string data = std::move(requestData);
-                    HttpClientConnPtr_t httpConn = std::make_shared<HttpClientConn>(conn, std::bind(&WsClient::onResponse, this, _1, _2, _3, callback));
+                    HttpClientConnPtr_t httpConn = std::make_shared<HttpClientConn>(conn, std::bind(&WsClient::onResponse, shared_from_this(), _1, _2, _3, callback));
                     conn->setEventCallback(std::bind(&HttpClientConn::onConnEvent, httpConn, _1, _2, _3));
                     conn->send(data);
                 }   

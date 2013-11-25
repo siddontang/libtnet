@@ -55,9 +55,9 @@ void onWsConnEvent(const WsConnectionPtr_t& conn, WsEvent event, const void* con
 int main()
 {
     IOLoop loop;
-    WsClient client(&loop);
+    WsClientPtr_t client = std::make_shared<WsClient>(&loop);
     
-    client.connect("ws://127.0.0.1:11181/push/ws", std::bind(&onWsConnEvent, _1, _2, _3));
+    client->connect("ws://127.0.0.1:11181/push/ws", std::bind(&onWsConnEvent, _1, _2, _3));
     
     loop.start();
     

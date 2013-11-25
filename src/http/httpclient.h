@@ -13,7 +13,8 @@ extern "C"
 
 namespace tnet 
 { 
-    class HttpClient
+    class HttpClient : public nocopyable
+                     , public std::enable_shared_from_this<HttpClient>
     {
     public:
         HttpClient(IOLoop* loop, int maxClients = 10);
@@ -31,9 +32,9 @@ namespace tnet
         void onConnEvent(const ConnectionPtr_t& conn, ConnEvent event, const void* context, 
                          const std::string& requestData, const ResponseCallback_t& callback);
 
-        void pushConn(const WeakConnectionPtr_t& conn);
+        void pushConn(const ConnectionPtr_t& conn);
        
-        WeakConnectionPtr_t popConn(uint32_t ip); 
+        ConnectionPtr_t popConn(uint32_t ip); 
          
     private:
         IOLoop* m_loop;

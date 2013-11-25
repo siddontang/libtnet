@@ -30,9 +30,9 @@ int main()
 {
     IOLoop loop;
     
-    HttpClient client(&loop);
+    HttpClientPtr_t client = std::make_shared<HttpClient>(&loop);
   
-    client.request("http://127.0.0.1:11181/abc", std::bind(&onResponse, &loop, _1));
+    client->request("http://127.0.0.1:11181/abc", std::bind(&onResponse, &loop, _1));
     
     loop.start(); 
 

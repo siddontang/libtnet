@@ -6,7 +6,8 @@
 
 namespace tnet
 {
-    class WsClient
+    class WsClient : public nocopyable
+                   , public std::enable_shared_from_this<WsClient>
     {
     public:
         WsClient(IOLoop* loop);

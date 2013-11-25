@@ -67,43 +67,38 @@ namespace tnet
     }
 
  
-    void HttpClient::pushConn(const WeakConnectionPtr_t& conn)
+    void HttpClient::pushConn(const ConnectionPtr_t& conn)
     {
-        ConnectionPtr_t c = conn.lock();
-        if(!c)
-        {
-            return;    
-        }
-
+        conn->clearEventCallback();
+        
         if(m_conns.size() >= m_maxClients)
         {
-            c->shutDown();
+            conn->shutDown();
             return;
         }
 
         Address addr(0);
-        if(SockUtil::getRemoteAddr(c->getSockFd(), addr) != 0)
+        if(SockUtil::getRemoteAddr(conn->getSockFd(), addr) != 0)
         {
-            c->shutDown();
+            conn->shutDown();
             return;    
         }
 
-        c->clearEventCallback();
         m_conns.insert(make_pair(addr.ip(), conn));
     }
 
-    WeakConnectionPtr_t HttpClient::popConn(uint32_t ip)
+    ConnectionPtr_t HttpClient::popConn(uint32_t ip)
     {
         IpConn_t::iterator iter = m_conns.find(ip);
         if(iter == m_conns.end())
         {
-            return WeakConnectionPtr_t();        
+            return ConnectionPtr_t();        
         }
         else
         {
             WeakConnectionPtr_t conn = iter->second;
             m_conns.erase(iter);
-            return conn;    
+            return conn.lock();    
         }
         
     }
@@ -127,11 +122,10 @@ namespace tnet
         Address addr(request.host, request.port);
     
         //now we only support ip
-        WeakConnectionPtr_t weakConn = popConn(addr.ip());
-        ConnectionPtr_t conn = weakConn.lock();
+        ConnectionPtr_t conn = popConn(addr.ip());
         if(conn)
         {
-            HttpClientConnPtr_t httpConn = std::make_shared<HttpClientConn>(conn, std::bind(&HttpClient::onResponse, this, _1, _2, _3, callback));
+            HttpClientConnPtr_t httpConn = std::make_shared<HttpClientConn>(conn, std::bind(&HttpClient::onResponse, shared_from_this(), _1, _2, _3, callback));
             conn->setEventCallback(std::bind(&HttpClientConn::onConnEvent, httpConn, _1, _2, _3));
             conn->send(request.dump());
         }
@@ -139,7 +133,7 @@ namespace tnet
         {
             int fd = SockUtil::create();
             conn = std::make_shared<Connection>(m_loop, fd); 
-            conn->setEventCallback(std::bind(&HttpClient::onConnEvent, this, _1, _2, _3, request.dump(), callback));
+            conn->setEventCallback(std::bind(&HttpClient::onConnEvent, shared_from_this(), _1, _2, _3, request.dump(), callback));
             conn->connect(addr);    
         }
     }
@@ -152,7 +146,7 @@ namespace tnet
             case Conn_ConnectEvent:
                 {
                     string data = std::move(requestData);
-                    HttpClientConnPtr_t httpConn = std::make_shared<HttpClientConn>(conn, std::bind(&HttpClient::onResponse, this, _1, _2, _3, callback));
+                    HttpClientConnPtr_t httpConn = std::make_shared<HttpClientConn>(conn, std::bind(&HttpClient::onResponse, shared_from_this(), _1, _2, _3, callback));
                     conn->setEventCallback(std::bind(&HttpClientConn::onConnEvent, httpConn, _1, _2, _3));
                     conn->send(data);
                 }

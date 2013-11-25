@@ -20,6 +20,8 @@ namespace tnet
 
     class HttpParser;
     class HttpClientConn;
+    class HttpClient;
+    class WsClient;
 
     //we use 599 for our tnet error
 
@@ -55,7 +57,10 @@ namespace tnet
 
     typedef std::shared_ptr<HttpParser> HttpParser_t;
     typedef std::shared_ptr<HttpClientConn> HttpClientConnPtr_t;
-   
+  
+    typedef std::shared_ptr<HttpClient> HttpClientPtr_t;
+    typedef std::shared_ptr<WsClient> WsClientPtr_t;
+
     enum RequestEvent
     {
         Request_Upgrade, 
