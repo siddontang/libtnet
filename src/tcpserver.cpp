@@ -96,7 +96,7 @@ namespace tnet
 
     void TcpServer::start(size_t maxProcess)
     {
-        if(maxProcess > 0)
+        if(maxProcess > 1)
         {
             m_process->wait(maxProcess, std::bind(&TcpServer::run, this));   
         }
