@@ -19,6 +19,7 @@ go to root source, then
 
 # Not supported!
 
+- unix socket domain
 - connect with domain, only supports ip:port
 - ssl
 
