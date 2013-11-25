@@ -17,6 +17,11 @@ go to root source, then
 - gcc >= 4.4, supports c++ 0x
 - linux, supports eventfd, signalfd and timerfd 
 
+# Not supported!
+
+- connect with domain, only supports ip:port
+- ssl
+
 # Other
 
 please see [wiki](https://github.com/siddontang/libtnet/wiki) for more information. If you have any problem when using libtnet, you can contact me through below.
