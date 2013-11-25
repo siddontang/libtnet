@@ -139,7 +139,7 @@ namespace tnet
 
     ssize_t WsConnection::onFrameStart(const char* data, size_t count)
     {
-        m_frame.clear();
+        m_cache.clear();
 
         char header = data[0];
         
@@ -160,8 +160,8 @@ namespace tnet
     {
         m_payloadLen = payloadLen;
        
-        m_frame.reserve(payloadLen);
-        m_frame.clear();
+        m_cache.reserve(payloadLen);
+        m_cache.clear();
 
         if(m_payloadLen == 0)
         {
@@ -210,15 +210,15 @@ namespace tnet
 
     ssize_t WsConnection::tryRead(const char* data, size_t count, size_t tryReadData)
     {
-        assert(m_frame.size() < tryReadData);
-        size_t pendingSize = m_frame.size();
+        assert(m_cache.size() < tryReadData);
+        size_t pendingSize = m_cache.size();
         if(pendingSize + count < tryReadData)
         {
-            m_frame.append(data, count);
+            m_cache.append(data, count);
             return 0;    
         }
 
-        m_frame.append(data, tryReadData - m_frame.size());
+        m_cache.append(data, tryReadData - m_cache.size());
 
         return tryReadData - pendingSize;
     }
@@ -231,8 +231,8 @@ namespace tnet
             return readLen;    
         }
        
-        uint16_t payloadLen = *(uint16_t*)m_frame.data();
-        //memcpy(&payloadLen, m_frame.data(), sizeof(uint16_t));
+        uint16_t payloadLen = *(uint16_t*)m_cache.data();
+        //memcpy(&payloadLen, m_cache.data(), sizeof(uint16_t));
         
         if(payloadLen > ms_maxPayloadLen)
         {
@@ -254,8 +254,8 @@ namespace tnet
             return readLen;    
         }
 
-        uint64_t payloadLen = *(uint64_t*)m_frame.data();
-        //memcpy(&payloadLen, m_frame.data(), sizeof(uint64_t));
+        uint64_t payloadLen = *(uint64_t*)m_cache.data();
+        //memcpy(&payloadLen, m_cache.data(), sizeof(uint64_t));
         
         if(payloadLen > ms_maxPayloadLen)
         {
@@ -278,9 +278,9 @@ namespace tnet
             return 0;
         }    
 
-        memcpy(m_maskingKey, m_frame.data(), sizeof(m_maskingKey));
+        memcpy(m_maskingKey, m_cache.data(), sizeof(m_maskingKey));
         
-        m_frame.clear();
+        m_cache.clear();
         
         m_status = FrameData;
 
@@ -298,9 +298,9 @@ namespace tnet
 
         if(isMaskFrame())
         {
-            for(size_t i = 0; i < m_frame.size(); ++i)
+            for(size_t i = 0; i < m_cache.size(); ++i)
             {
-                m_frame[i] = m_frame[i] ^ m_maskingKey[i % 4];   
+                m_cache[i] = m_cache[i] ^ m_maskingKey[i % 4];   
             }    
         }
 
@@ -311,7 +311,7 @@ namespace tnet
     ssize_t WsConnection::handleFrameData(const ConnectionPtr_t& conn)
     {
         uint8_t opcode = m_opcode;
-        string data = m_frame;
+        string data = m_cache;
 
         if(isControlFrame())
         {
@@ -324,25 +324,25 @@ namespace tnet
         else if(m_opcode == 0)
         {
             //continuation frame
-            if(m_cache.empty())
+            if(m_appData.empty())
             {
                 //nothing to continue
                 return -1;    
             }    
 
-            m_cache += m_frame;
+            m_appData += m_cache;
 
             if(isFinalFrame())
             {
                 opcode = m_lastOpcode;
-                data = m_cache;
-                string().swap(m_cache);
+                data = m_appData;
+                string().swap(m_appData);
             }
         }
         else
         {
             //start of new data message
-            if(!m_cache.empty())
+            if(!m_appData.empty())
             {
                 //can't start new message until the old one is finished
                 return -1;    
@@ -351,16 +351,16 @@ namespace tnet
             if(isFinalFrame())
             {
                 opcode = m_opcode;
-                data = m_frame;
+                data = m_cache;
             }
             else
             {
                 m_lastOpcode = m_opcode;
-                m_cache = m_frame;    
+                m_appData = m_cache;    
             }
         }
 
-        string().swap(m_frame);
+        string().swap(m_cache);
 
         if(isFinalFrame())
         {

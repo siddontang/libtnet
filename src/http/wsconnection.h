@@ -83,9 +83,7 @@ namespace tnet
         }; 
         
         WeakConnectionPtr_t m_conn;
-
-        std::string m_frame;
-    
+ 
         size_t m_payloadLen;
 
         FrameStatus m_status;
@@ -99,6 +97,8 @@ namespace tnet
     
         std::string m_cache;
     
+        std::string m_appData;
+        
         WsCallback_t m_callback;
         
         Callback_t m_sendCallback;
