@@ -2,6 +2,7 @@ set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 
 include_directories(../src)
 include_directories(../src/http)
+include_directories(../src/redis)
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 
@@ -31,3 +32,6 @@ target_link_libraries(signaler_test tnet)
 
 add_executable(notifier_test notifier_test.cpp)
 target_link_libraries(notifier_test tnet)
+
+add_executable(redisclient_test redisclient_test.cpp)
+target_link_libraries(redisclient_test tnet tnet_redis)
