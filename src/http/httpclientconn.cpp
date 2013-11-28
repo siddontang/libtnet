@@ -24,6 +24,7 @@ namespace tnet
     
     void HttpClientConn::onConnEvent(const ConnectionPtr_t& conn, ConnEvent event, const void* context)
     {
+        HttpClientConnPtr_t httpConn = shared_from_this();
         switch(event)
         {
             case Conn_ReadEvent:

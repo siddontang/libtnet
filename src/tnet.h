@@ -17,6 +17,7 @@ namespace tnet
     class Signaler;
     class Process;
     class Notifier;
+    class Address;
 
     enum 
     {

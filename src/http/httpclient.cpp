@@ -89,18 +89,24 @@ namespace tnet
 
     ConnectionPtr_t HttpClient::popConn(uint32_t ip)
     {
-        IpConn_t::iterator iter = m_conns.find(ip);
-        if(iter == m_conns.end())
+        while(true)
         {
-            return ConnectionPtr_t();        
+            IpConn_t::iterator iter = m_conns.find(ip);
+            if(iter == m_conns.end())
+            {
+                return ConnectionPtr_t();        
+            }
+            else
+            {
+                WeakConnectionPtr_t conn = iter->second;
+                m_conns.erase(iter);
+                ConnectionPtr_t c = conn.lock(); 
+                if(c)
+                {
+                    return c;    
+                }   
+            }
         }
-        else
-        {
-            WeakConnectionPtr_t conn = iter->second;
-            m_conns.erase(iter);
-            return conn.lock();    
-        }
-        
     }
 
     void HttpClient::onResponse(const HttpClientConnPtr_t& conn, const HttpResponse& response, ResponseEvent event, const ResponseCallback_t& callback)
@@ -110,8 +116,11 @@ namespace tnet
         if(event == Response_Complete)
         {
             ConnectionPtr_t c = conn->lockConn();    
-    
-            pushConn(c);
+
+            if(c)
+            {    
+                pushConn(c);
+            }
         }
     }
 
@@ -141,6 +150,7 @@ namespace tnet
     void HttpClient::onConnEvent(const ConnectionPtr_t& conn, ConnEvent event,
                                  const void* context, const string& requestData, const ResponseCallback_t& callback)
     {
+        HttpClientPtr_t httpConn = shared_from_this();
         switch(event)
         {
             case Conn_ConnectEvent:

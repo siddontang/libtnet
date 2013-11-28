@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <stdint.h>
+#include <sstream>
 
 namespace tnet
 {
@@ -30,6 +31,24 @@ namespace tnet
 
         static std::string sha1Bin(const std::string& src);
         static std::string sha1Hex(const std::string& src);
+
+        template<typename T>
+        static std::string toString(const T& in)
+        {
+            std::stringstream str;
+            str << in;
+            return str.str();    
+        }
+
+        static std::string toString(const char* in)
+        {
+            return std::string(in);    
+        }
+
+        static std::string toString(const std::string& in)
+        {
+            return std::string(in);
+        }
     };    
 }
 

@@ -82,6 +82,7 @@ namespace tnet
     void WsClient::onConnEvent(const ConnectionPtr_t& conn, ConnEvent event, const void* context,
                                const string& requestData, const WsCallback_t& callback)
     {
+        WsClientPtr_t httpConn = shared_from_this();
         switch(event)
         {
             case Conn_ConnectEvent:

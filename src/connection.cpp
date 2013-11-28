@@ -298,18 +298,11 @@ namespace tnet
         }
     }
 
-    void Connection::handleError()
-    {
-        m_callback(shared_from_this(), Conn_ErrorEvent, 0);
-        
-        handleClose();    
-    }
-
-    void Connection::handleClose()
+    bool Connection::disconnect()
     {
         if(m_status == Disconnected)
         {
-            return;    
+            return false;    
         }    
 
         m_status = Disconnected;
@@ -317,7 +310,21 @@ namespace tnet
 
         close(m_fd);
 
-        m_callback(shared_from_this(), Conn_CloseEvent, 0);
+        return true;
+    }
+
+    void Connection::handleError()
+    {
+        disconnect();
+        m_callback(shared_from_this(), Conn_ErrorEvent, 0);
+    }
+
+    void Connection::handleClose()
+    {
+        if(disconnect())
+        {
+            m_callback(shared_from_this(), Conn_CloseEvent, 0);
+        }
     }
 
     int Connection::send(const string& data)

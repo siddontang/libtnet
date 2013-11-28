@@ -31,6 +31,8 @@ install(TARGETS tnet DESTINATION lib)
 set (HEADERS
     address.h
     connection.h
+    connector.h
+    connector.inl
     log.h
     nocopyable.h
     notifier.h
@@ -47,3 +49,4 @@ install(FILES ${HEADERS} DESTINATION include/tnet)
 
 
 add_subdirectory(http)
+add_subdirectory(redis)

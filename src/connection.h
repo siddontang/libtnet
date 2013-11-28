@@ -56,6 +56,7 @@ namespace tnet
         void handleConnect();
 
         void updateActiveTime();
+        bool disconnect();
 
     private:
         ConnEventCallback_t m_callback;
