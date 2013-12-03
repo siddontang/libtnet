@@ -30,7 +30,7 @@ namespace tnet
 
         void onReply(const RedisConnectionPtr_t& conn, const RedisReply& reply, const ReplyCallback_t& callback);
 
-        void onConnect(const RedisConnectionPtr_t& conn, int status, std::initializer_list<std::string> cmd);
+        void onConnect(const RedisConnectionPtr_t& conn, int status, const std::vector<std::string>& cmd);
 
     private:
         IOLoop* m_loop;

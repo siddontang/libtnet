@@ -122,11 +122,11 @@ namespace tnet
             conn->setCallback(std::bind(&RedisClient::onReply, 
                         shared_from_this(), _1, _2, callback));
 
-            conn->connect(m_loop, m_address, m_password, std::bind(&RedisClient::onConnect, shared_from_this(), _1, _2, cmd));
+            conn->connect(m_loop, m_address, m_password, std::bind(&RedisClient::onConnect, shared_from_this(), _1, _2, vector<string>(cmd)));
         } 
     }
 
-    void RedisClient::onConnect(const RedisConnectionPtr_t& conn, int status, initializer_list<string> cmd)
+    void RedisClient::onConnect(const RedisConnectionPtr_t& conn, int status, const vector<string>& cmd)
     {
         if(status != 0)
         {

@@ -100,8 +100,12 @@ namespace tnet
 
     void RedisConnection::exec(initializer_list<string> cmd)
     {
-        string str = buildRequest(vector<string>(cmd));
-        send(str);    
+        return exec(vector<string>(cmd));
+    }
+
+    void RedisConnection::exec(const vector<string>& cmd)
+    {
+        send(buildRequest(cmd));
     }
 
     void RedisConnection::connect(IOLoop* loop, const Address& addr, const string& password, const ConnectCallback_t& callback)
@@ -120,10 +124,13 @@ namespace tnet
 
         if(!password.empty())
         {
-            m_authCallback = std::bind(&RedisConnection::onAuth, shared_from_this(), _1, _2, callback);
+            string pass = std::move(password);
+            ConnectCallback_t cb = std::move(callback);
+
+            m_authCallback = std::bind(&RedisConnection::onAuth, shared_from_this(), _1, _2, cb);
             
             static const string AuthCmd = "AUTH";
-            string data = buildRequest({AuthCmd, password});
+            string data = buildRequest({AuthCmd, pass});
 
             conn->send(data);    
         }
@@ -144,12 +151,12 @@ namespace tnet
 
         if(r.err != 0 || reply->type != REDIS_REPLY_STATUS && strcasecmp(reply->str, "OK") != 0)
         {
-            callback(shared_from_this(), -2);
+            cb(shared_from_this(), -2);
             conn->shutDown();
         }
         else
         {
-            callback(shared_from_this(), 0);    
+            cb(shared_from_this(), 0);    
         }
         
     }

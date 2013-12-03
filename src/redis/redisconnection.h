@@ -23,6 +23,7 @@ namespace tnet
         void setCallback(const ReplyCallback_t& callback) { m_callback = callback; }
 
         void exec(std::initializer_list<std::string> cmd);
+        void exec(const std::vector<std::string>& cmd);
 
         //ConnectCallback status: 0 for ok, -1 for not connected, -2 for auth fail
         typedef std::function<void (const RedisConnectionPtr_t& conn, int status)> ConnectCallback_t;   
