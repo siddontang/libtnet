@@ -3,6 +3,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 
+#include "sockutil.h"
 #include "log.h"
 
 using namespace std;
@@ -27,6 +28,14 @@ namespace tnet
         
         if(inet_pton(AF_INET, ip.c_str(), &m_addr.sin_addr) <= 0)
         {
+            //may be domain
+            uint32_t ret = SockUtil::getHostByName(ip);
+            if(ret != uint32_t(-1))
+            {
+                m_addr.sin_addr.s_addr = ret;
+                return;
+            }
+
             LOG_ERROR("invalid ip %s, use 0.0.0.0 instead", ip.c_str());
             //error, may log later, now use INADDR_ANY
             m_addr.sin_addr.s_addr = htonl(INADDR_ANY);    

@@ -8,9 +8,13 @@
 #include <netinet/tcp.h>
 #include <netinet/in.h>
 #include <assert.h>
+#include <netdb.h>
+#include <string.h>
 
 #include "address.h"
 #include "log.h"
+
+using namespace std;
 
 namespace tnet
 {
@@ -152,4 +156,29 @@ namespace tnet
         }
     }
 
+    uint32_t SockUtil::getHostByName(const string& host)
+    {
+        struct addrinfo hint;
+        struct addrinfo *answer;
+
+        memset(&hint, 0, sizeof(hint));
+        hint.ai_family = AF_INET;
+        hint.ai_socktype = SOCK_STREAM;
+
+        int ret = getaddrinfo(host.c_str(), NULL, &hint, &answer);
+        if(ret != 0)
+        {
+            LOG_ERROR("getaddrinfo error %s", errorMsg(errno));
+            return uint32_t(-1);
+        }
+
+        //we only use first find addr
+        for(struct addrinfo* cur = answer; cur != NULL; cur = cur->ai_next)
+        {
+            return ((struct sockaddr_in*)(cur->ai_addr))->sin_addr.s_addr;
+        }
+
+        LOG_ERROR("getHostByName Error");
+        return uint32_t(-1);
+    }
 }

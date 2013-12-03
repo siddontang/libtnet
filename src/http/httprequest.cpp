@@ -148,6 +148,11 @@ namespace tnet
         char buf[1024];
         
         int n = 0;
+        if(path.empty())
+        {
+            path = "/";
+        }
+
         if(query.empty())
         {
             n = snprintf(buf, sizeof(buf), "%s %s HTTP/%d.%d\r\n", 

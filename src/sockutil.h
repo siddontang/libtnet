@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <stdint.h>
 
 namespace tnet
@@ -21,7 +22,8 @@ namespace tnet
         static int getRemoteAddr(int sockFd, Address& addr);
 
         static int getSockError(int sockFd);
-    
+
+        static uint32_t getHostByName(const std::string& host);    
     };
 
 }
