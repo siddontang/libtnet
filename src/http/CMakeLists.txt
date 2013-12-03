@@ -3,8 +3,8 @@ set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 set (SRCS
     http_parser.c
     httpclient.cpp
-    httpclientconn.cpp
     httpconnection.cpp
+    httpconnector.cpp
     httpparser.cpp
     httprequest.cpp
     httpresponse.cpp

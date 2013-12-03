@@ -3,31 +3,33 @@
 #include "tnet_http.h"
 #include "httpparser.h"
 #include "httpresponse.h"
+#include "connector.h"
 
 namespace tnet
 {
 
-    class HttpClientConn : public HttpParser
-                         , public std::enable_shared_from_this<HttpClientConn> 
+    class HttpConnector : public HttpParser
+                        , public Connector<HttpConnector>
     {
     public:
         friend class HttpClient;
         friend class WsClient;
+        friend class Connector<HttpConnector>;
 
-        typedef std::function<void (const HttpClientConnPtr_t&, const HttpResponse&, ResponseEvent)> ResponseCallback_t; 
+        typedef std::function<void (const HttpConnectorPtr_t&, const HttpResponse&, ResponseEvent)> ResponseCallback_t; 
         
-        HttpClientConn(const ConnectionPtr_t& conn, const ResponseCallback_t&);
-        ~HttpClientConn();
+        HttpConnector();
+        ~HttpConnector();
 
-        ConnectionPtr_t lockConn() { return m_conn.lock(); }
-        WeakConnectionPtr_t getConn() { return m_conn; }
+        void setCallback(const ResponseCallback_t& callback) { m_callback = callback; }
+        void clearCallback();
 
         static void setMaxHeaderSize(size_t size) { ms_maxHeaderSize = size; }
         static void setMaxBodySize(size_t size) { ms_maxBodySize = size; }
         
     private:
-        void onConnEvent(const ConnectionPtr_t& conn, ConnEvent event, const void* context);
-        
+        void handleRead(const char* buffer, size_t count);
+
         int onMessageBegin();
         int onHeader(const std::string& field, const std::string& value);
         int onHeadersComplete();
@@ -36,8 +38,6 @@ namespace tnet
         int onError(const HttpError& error);
 
     private:
-        WeakConnectionPtr_t m_conn;
-        
         HttpResponse m_response;    
 
         ResponseCallback_t m_callback;

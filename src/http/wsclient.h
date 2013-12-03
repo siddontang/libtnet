@@ -20,9 +20,9 @@ namespace tnet
     private:
         void connect(HttpRequest& request, const WsCallback_t& callback);
 
-        void onConnEvent(const ConnectionPtr_t& conn, ConnEvent event, const void* context,
-                         const std::string& requestData, const WsCallback_t& callback);
-        void onResponse(const HttpClientConnPtr_t&, const HttpResponse&, ResponseEvent, const WsCallback_t&);
+        void onResponse(const HttpConnectorPtr_t&, const HttpResponse&, ResponseEvent, const WsCallback_t&);
+
+        void onConnect(const HttpConnectorPtr_t& conn, bool connected, const std::string& requestData, const WsCallback_t& callback);
 
     private:
         IOLoop* m_loop;

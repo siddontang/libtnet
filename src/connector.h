@@ -18,7 +18,8 @@ namespace tnet
         typedef std::function<void (const DerivedPtr_t& conn, bool connected)> ConnectCallback_t;
          
         int connect(IOLoop* loop, const Address& addr, const ConnectCallback_t& callback);
-        
+       
+        WeakConnectionPtr_t getConn() { return m_conn; } 
         ConnectionPtr_t lockConn() { return m_conn.lock(); }
 
         void send(const std::string& data);

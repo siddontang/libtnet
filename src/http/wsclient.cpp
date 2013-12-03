@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "httpclientconn.h"
 #include "connection.h"
 #include "wsconnection.h"
 #include "address.h"
@@ -15,6 +14,8 @@
 #include "ioloop.h"
 #include "sockutil.h"
 #include "address.h"
+#include "httpconnector.h"
+#include "connector.inl"
 
 using namespace std;
 
@@ -54,14 +55,12 @@ namespace tnet
         request.parseUrl();
         
         Address addr(request.host, request.port);
-        int fd = SockUtil::create();
-        
-        ConnectionPtr_t conn = std::make_shared<Connection>(m_loop, fd);
-        conn->setEventCallback(std::bind(&WsClient::onConnEvent, shared_from_this(), _1, _2, _3, request.dump(), callback));
-        conn->connect(addr);     
+
+        HttpConnectorPtr_t conn = std::make_shared<HttpConnector>();
+        conn->connect(m_loop, addr, std::bind(&WsClient::onConnect, shared_from_this(), _1, _2, request.dump(), callback));
     }
 
-    void WsClient::onResponse(const HttpClientConnPtr_t& conn, const HttpResponse& response, ResponseEvent event, const WsCallback_t& callback)
+    void WsClient::onResponse(const HttpConnectorPtr_t& conn, const HttpResponse& response, ResponseEvent event, const WsCallback_t& callback)
     {
         ConnectionPtr_t c = conn->lockConn();         
         if(c)
@@ -79,20 +78,19 @@ namespace tnet
         }
     }
 
-    void WsClient::onConnEvent(const ConnectionPtr_t& conn, ConnEvent event, const void* context,
-                               const string& requestData, const WsCallback_t& callback)
+    void WsClient::onConnect(const HttpConnectorPtr_t& conn, bool connected,
+                             const string& requestData, const WsCallback_t& callback)
     {
-        WsClientPtr_t httpConn = shared_from_this();
-        switch(event)
+        if(!connected)
         {
-            case Conn_ConnectEvent:
-                {
-                    string data = std::move(requestData);
-                    HttpClientConnPtr_t httpConn = std::make_shared<HttpClientConn>(conn, std::bind(&WsClient::onResponse, shared_from_this(), _1, _2, _3, callback));
-                    conn->setEventCallback(std::bind(&HttpClientConn::onConnEvent, httpConn, _1, _2, _3));
-                    conn->send(data);
-                }   
-                break;    
-        }    
+            LOG_ERROR("wsclient connect error");
+            return;
+        }
+
+        string data = std::move(requestData);
+        WsCallback_t cb = std::move(callback);            
+
+        conn->setCallback(std::bind(&WsClient::onResponse, shared_from_this(), _1, _2, _3, cb));
+        conn->send(data);
     }
 }

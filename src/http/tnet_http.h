@@ -22,6 +22,7 @@ namespace tnet
     class HttpClientConn;
     class HttpClient;
     class WsClient;
+    class HttpConnector;
 
     //we use 599 for our tnet error
 
@@ -57,7 +58,9 @@ namespace tnet
 
     typedef std::shared_ptr<HttpParser> HttpParser_t;
     typedef std::shared_ptr<HttpClientConn> HttpClientConnPtr_t;
-  
+    typedef std::shared_ptr<HttpConnector> HttpConnectorPtr_t;
+    typedef std::weak_ptr<HttpConnector> WeakHttpConnectorPtr_t;
+
     typedef std::shared_ptr<HttpClient> HttpClientPtr_t;
     typedef std::shared_ptr<WsClient> WsClientPtr_t;
 

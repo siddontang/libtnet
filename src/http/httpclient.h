@@ -28,19 +28,19 @@ namespace tnet
     private:
         void request(HttpRequest& request, const ResponseCallback_t& callback);    
         
-        void onResponse(const HttpClientConnPtr_t& conn, const HttpResponse& response, ResponseEvent event, const ResponseCallback_t& callback);
-        void onConnEvent(const ConnectionPtr_t& conn, ConnEvent event, const void* context, 
-                         const std::string& requestData, const ResponseCallback_t& callback);
+        void onResponse(const HttpConnectorPtr_t& conn, const HttpResponse& response, ResponseEvent event, const ResponseCallback_t& callback);
 
-        void pushConn(const ConnectionPtr_t& conn);
+        void onConnect(const HttpConnectorPtr_t&, bool connected, const std::string& requestData, const ResponseCallback_t& callback);
+
+        void pushConn(const HttpConnectorPtr_t& conn);
        
-        ConnectionPtr_t popConn(uint32_t ip); 
+        HttpConnectorPtr_t popConn(uint32_t ip); 
          
     private:
         IOLoop* m_loop;
 
         int m_maxClients;
-        typedef std::multimap<uint32_t, WeakConnectionPtr_t> IpConn_t;
+        typedef std::multimap<uint32_t, WeakHttpConnectorPtr_t> IpConn_t;
         IpConn_t m_conns;
     };
         
