@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
+#include <assert.h>
 #include "ioloop.h"
 #include "log.h"
 #include "sockutil.h"
@@ -15,7 +16,6 @@ namespace tnet
 {
     void dummyConnEvent(const ConnectionPtr_t&, ConnEvent, const void*)
     {
-        
     }
 
     const int MaxReadBuffer = 4096;
@@ -25,6 +25,7 @@ namespace tnet
         , m_fd(fd)
         , m_status(None)
     {
+        assert(fd > 0);
         m_callback = std::bind(&dummyConnEvent, _1, _2, _3);
     }
 
@@ -230,23 +231,15 @@ namespace tnet
         }
 
         size_t totalSize = m_sendBuffer.size() + data.size();
-        int niov = m_sendBuffer.empty() ? 1 : 2;
-        int i = 0;
+        int niov = 2;
 
         struct iovec iov[niov];
-        if(!m_sendBuffer.empty()) 
-        {
-            iov[i].iov_base = (void*)m_sendBuffer.data();
-            iov[i].iov_len = m_sendBuffer.size();
-            ++i;    
-        }
+       
+        iov[0].iov_base = (void*)m_sendBuffer.data();
+        iov[0].iov_len = m_sendBuffer.size();
 
-        if(!data.empty())
-        {
-            iov[i].iov_base = (void*)data.data();
-            iov[i].iov_len = data.size();
-            ++i;    
-        }
+        iov[1].iov_base = (void*)data.data();
+        iov[1].iov_len = data.size();
 
         ssize_t n = writev(m_fd, iov, niov);
         if(n == totalSize)
@@ -264,13 +257,13 @@ namespace tnet
         else if(n < 0)
         {
             int err = errno;
+            LOG_INFO("write error %s", errorMsg(err));
             if(err == EAGAIN || err == EWOULDBLOCK)
             {
                 //try write later, can enter here?
-                LOG_INFO("write %s", errorMsg(err));
-
                 m_sendBuffer.append(data);
 
+                m_loop->updateHandler(m_fd, TNET_READ | TNET_WRITE);
                 return;   
             }    
             else
@@ -295,6 +288,8 @@ namespace tnet
             }
             
             updateActiveTime();
+            
+            m_loop->updateHandler(m_fd, TNET_READ | TNET_WRITE);
         }
     }
 

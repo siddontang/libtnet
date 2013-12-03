@@ -71,6 +71,8 @@ namespace tnet
         struct epoll_event event;
         
         event.data.u64 = 0;
+        event.data.fd = fd;
+
         event.events = (events & TNET_READ ? EPOLLIN : 0)
                      | (events & TNET_WRITE ? EPOLLOUT : 0);   
 
