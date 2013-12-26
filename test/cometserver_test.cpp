@@ -42,8 +42,8 @@ void onHandler(const HttpConnectionPtr_t& conn, const HttpRequest& request)
     if(request.method == HTTP_GET)
     {
         int timeout = random() % 60 + 30;
-    //    comet.wheel->add(std::bind(&onTimeout, _1, WeakHttpConnectionPtr_t(conn)), 1000);
-        conn->send(200);
+        comet.wheel->add(std::bind(&onTimeout, _1, WeakHttpConnectionPtr_t(conn)), timeout * 1000);
+        //conn->send(200);
     }
     else
     {
@@ -65,7 +65,7 @@ int main()
 
     httpd.listen(Address(11181));
 
-    s.start();
+    s.start(4);
 
     return 0; 
 }

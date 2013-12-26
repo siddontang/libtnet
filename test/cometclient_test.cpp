@@ -2,6 +2,8 @@
 #include <string>
 #include <stdlib.h>
 
+#include "log.h"
+#include "timingwheel.h"
 #include "httpclient.h"
 
 #include "httprequest.h"
@@ -24,8 +26,18 @@ void onResponse(const HttpClientPtr_t& client, const HttpResponse& resp)
     client->request(url, std::bind(&onResponse, client, _1));
 } 
 
+void request(const TimingWheelPtr_t& wheel, const HttpClientPtr_t& client, int num)
+{
+    for(int i = 0; i < num; ++i)
+    {
+        client->request(url, std::bind(&onResponse, client, _1));
+    }
+}
+
 int main(int argc, char* args[])
 {
+    Log::rootLog().setLevel(Log::ERROR);
+    
     int num = 60000;
     if(argc == 2)
     {
@@ -37,11 +49,15 @@ int main(int argc, char* args[])
     IOLoop loop;
 
     HttpClientPtr_t client = std::make_shared<HttpClient>(&loop);
+    TimingWheelPtr_t wheel = std::make_shared<TimingWheel>(1000, 3600);
 
-    for(int i = 0; i < num; ++i)
+    for(int i = 0; i < 60; ++i)
     {
-        client->request(url, std::bind(&onResponse, client, _1));
+        int reqNum = num / 60;
+        wheel->add(std::bind(&request, _1, client, reqNum), i * 1000);
     }
+
+    wheel->start(&loop);
 
     loop.start();
 
