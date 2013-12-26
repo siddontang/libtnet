@@ -16,12 +16,12 @@ namespace tnet
     static const string upgradeValue = "websocket";
     static const string connectionKey = "Connection";
     static const string connectionValue = "Upgrade";
-    static const string wsVersionKey = "Sec-WebSocket-Version";
+    static const string wsVersionKey = "Sec-Websocket-Version";
     static const string wsVersionValue = "13";
-    static const string wsProtocolKey = "Sec-WebSocket-Protocol";
+    static const string wsProtocolKey = "Sec-Websocket-Protocol";
     static const string wsProtocolValue = "chat";
-    static const string wsAcceptKey = "Sec-WebSocket-Accept";
-    static const string wsKey = "Sec-WebSocket-Key";
+    static const string wsAcceptKey = "Sec-Websocket-Accept";
+    static const string wsKey = "Sec-Websocket-Key";
     static const string originKey = "Origin";
     static const string wsMagicKey = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     

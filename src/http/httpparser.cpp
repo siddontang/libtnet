@@ -146,7 +146,7 @@ namespace tnet
         {
             if(!m_curField.empty())
             {  
-                onHeader(m_curField, m_curValue);
+                onHeader(HttpUtil::normalizeHeader(m_curField), m_curValue);
             }
             
             m_curField.clear();    
