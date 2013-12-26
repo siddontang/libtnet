@@ -38,3 +38,11 @@ target_link_libraries(notifier_test tnet)
 
 add_executable(redisclient_test redisclient_test.cpp)
 target_link_libraries(redisclient_test tnet tnet_redis)
+
+
+add_executable(cometserver_test cometserver_test.cpp)
+target_link_libraries(cometserver_test tnet tnet_http)
+
+
+add_executable(cometclient_test cometclient_test.cpp)
+target_link_libraries(cometclient_test tnet tnet_http)

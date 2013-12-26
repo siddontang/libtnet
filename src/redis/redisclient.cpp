@@ -80,8 +80,7 @@ namespace tnet
 
     void RedisClient::onReply(const RedisConnectionPtr_t& conn, const RedisReply& reply, const ReplyCallback_t& callback)
     {
-        callback(reply);
-        
+        callback(reply); 
         pushConn(conn);    
     }
 

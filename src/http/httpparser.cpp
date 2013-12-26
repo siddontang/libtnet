@@ -184,7 +184,7 @@ namespace tnet
         int n = http_parser_execute(&m_parser, &ms_settings, buffer, count);
         if(m_parser.upgrade)
         {
-            onUpgrade(buffer + n, count -n); 
+            onUpgrade(buffer + n, count - n); 
             return 0;
         }
         else if(n != count)

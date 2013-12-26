@@ -56,7 +56,7 @@ namespace tnet
     {
         int index = m_nextBucket;
 
-        auto chans = m_buckets[index].chans;
+        auto& chans = m_buckets[index].chans;
         for(auto iter = chans.begin(); iter != chans.end(); ++iter)
         {
             (iter->second)(shared_from_this());

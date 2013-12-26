@@ -95,6 +95,7 @@ namespace tnet
         if(u.field_set & (1 << UF_QUERY))
         {
             query = url.substr(u.field_data[UF_QUERY].off, u.field_data[UF_QUERY].len);    
+            parseQuery();
         } 
         
     }

@@ -116,7 +116,7 @@ namespace tnet
     }
 
     void HttpClient::onResponse(const HttpConnectorPtr_t& conn, const HttpResponse& response, ResponseEvent event, const ResponseCallback_t& callback)
-    {
+    { 
         callback(response);
         
         if(event == Response_Complete)
