@@ -80,8 +80,12 @@ namespace tnet
 
     void RedisClient::onReply(const RedisConnectionPtr_t& conn, const RedisReply& reply, const ReplyCallback_t& callback)
     {
-        callback(reply); 
+        RedisConnectionPtr_t c = conn->shared_from_this(); 
+        auto cb = std::move(callback);
+
         pushConn(conn);    
+        
+        cb(reply); 
     }
 
     void RedisClient::newTrans(const NewTransCallback_t& callback)
