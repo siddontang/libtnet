@@ -3,7 +3,6 @@ set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 set (SRCS
     acceptor.cpp
     address.cpp
-    connchecker.cpp
     connection.cpp
     notifier.cpp
     log.cpp

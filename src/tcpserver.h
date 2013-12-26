@@ -26,12 +26,6 @@ namespace tnet
         
         IOLoop* getLoop() { return m_loop; }
 
-        //repeat is milliseconds
-        void setConnCheckRepeat(int repeat);
-        void setConnCheckStep(int step);
-        void setConnTimeout(int timeout);
-        void setConnConnectTimeout(int timeout);
-
         void setRunCallback(const ServerRunCallback_t& callback) { m_runCallback = callback; }
 
     private:
@@ -45,9 +39,6 @@ namespace tnet
         IOLoop* m_loop;
         
         ProcessPtr_t m_process;
-
-        typedef std::shared_ptr<ConnChecker> ConnCheckerPtr_t;
-        ConnCheckerPtr_t m_connChecker;
 
         std::vector<AcceptorPtr_t> m_acceptors;
 

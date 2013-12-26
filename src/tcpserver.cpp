@@ -16,7 +16,6 @@
 #include "signaler.h"
 #include "timer.h"
 #include "process.h"
-#include "connchecker.h"
 
 using namespace std;
 
@@ -78,13 +77,9 @@ namespace tnet
     void TcpServer::onRun()
     {
         LOG_INFO("tcp server on run");
-
-        m_connChecker = std::make_shared<ConnChecker>();
-            
+        
         for_each(m_acceptors.begin(), m_acceptors.end(), 
             std::bind(&Acceptor::start, _1, m_loop));
-            
-        m_connChecker->start(m_loop);
 
         vector<int> signums{SIGINT, SIGTERM};
         m_signaler = std::make_shared<Signaler>(signums, std::bind(&TcpServer::onSignal, this, _1, _2)); 
@@ -119,8 +114,6 @@ namespace tnet
         m_signaler->stop();
         
         for_each_all(m_acceptors, std::bind(&Acceptor::stop, _1));
-        
-        m_connChecker->stop();
          
         m_loop->stop();    
     }
@@ -141,8 +134,6 @@ namespace tnet
 
         conn->onEstablished();
 
-        m_connChecker->addConn(fd, conn);
-
         return;
     }
 
@@ -160,25 +151,5 @@ namespace tnet
                 LOG_ERROR("invalid signal %d", signum);
                 break;
         }    
-    }
-
-    void TcpServer::setConnCheckRepeat(int repeat)
-    {
-        m_connChecker->setRepeat(repeat);    
-    }
-    
-    void TcpServer::setConnCheckStep(int step)
-    {
-        m_connChecker->setStep(step);
-    }
-    
-    void TcpServer::setConnTimeout(int timeout)
-    {
-        m_connChecker->setTimeout(timeout);
-    }
-
-    void TcpServer::setConnConnectTimeout(int timeout)
-    {
-        m_connChecker->setConnectTimeout(timeout);
     }
 }
