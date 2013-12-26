@@ -20,6 +20,7 @@ namespace tnet
     class Process;
     class Notifier;
     class Address;
+    class TimingWheel;
 
     enum 
     {
@@ -58,6 +59,7 @@ namespace tnet
     typedef std::shared_ptr<Signaler> SignalerPtr_t;
     typedef std::shared_ptr<Process> ProcessPtr_t;
     typedef std::shared_ptr<Notifier> NotifierPtr_t;
+    typedef std::shared_ptr<TimingWheel> TimingWheelPtr_t;
 
     typedef std::function<void (IOLoop*, int)> IOHandler_t;
     typedef std::function<void (IOLoop*, int)> NewConnCallback_t;
@@ -86,4 +88,5 @@ namespace tnet
 
     typedef std::function<void (const SignalerPtr_t&, int)> SignalHandler_t;
     typedef std::function<void (const NotifierPtr_t&)> NotifierHandler_t;
+    typedef std::function<void (const TimingWheelPtr_t&)> TimingWheelHandler_t;
 }

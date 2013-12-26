@@ -15,7 +15,7 @@ set (SRCS
     stringutil.cpp
     tcpserver.cpp
     timer.cpp
-
+    timingwheel.cpp
     polarssl/base64.c
     polarssl/md5.c
     polarssl/sha1.c
@@ -42,6 +42,7 @@ set (HEADERS
     stringutil.h
     tcpserver.h
     timer.h
+    timingwheel.h
     tnet.h 
     )
 

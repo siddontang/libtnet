@@ -27,6 +27,9 @@ target_link_libraries(wsclient_test tnet tnet_http)
 add_executable(timer_test timer_test.cpp)
 target_link_libraries(timer_test tnet rt)
 
+add_executable(timingwheel_test timingwheel_test.cpp)
+target_link_libraries(timingwheel_test tnet rt)
+
 add_executable(signaler_test signaler_test.cpp)
 target_link_libraries(signaler_test tnet)
 
