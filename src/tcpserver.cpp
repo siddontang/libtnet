@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <assert.h>
 #include <time.h>
+#include <stdlib.h>
 
 #include "address.h"
 #include "sockutil.h"
@@ -146,8 +147,8 @@ namespace tnet
 
         conn->onEstablished();
 
-        //check interval is (maxIdleTimeout * 9 / 10) * 1000
-        m_idleWheel->add(std::bind(&TcpServer::onIdleConnCheck, this, _1, WeakConnectionPtr_t(conn)), m_maxIdleTimeout * 900);
+        int afterCheck = m_maxIdleTimeout / 2 + random() % m_maxIdleTimeout;
+        m_idleWheel->add(std::bind(&TcpServer::onIdleConnCheck, this, _1, WeakConnectionPtr_t(conn)), afterCheck * 1000);
 
         return;
     }
@@ -171,6 +172,7 @@ namespace tnet
         }
         else
         { 
+            //check interval is (maxIdleTimeout * 9 / 10) * 1000
             m_idleWheel->add(std::bind(&TcpServer::onIdleConnCheck, this, _1, WeakConnectionPtr_t(c)), m_maxIdleTimeout * 900);
         }
     }
