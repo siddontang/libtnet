@@ -11,14 +11,14 @@ namespace tnet
     {
         
     }
-    
+
     template<typename Derived>
     Connector<Derived>::~Connector()
     {
     }
 
     template<typename Derived>
-    int Connector<Derived>::connect(IOLoop* loop, const Address& addr, const ConnectCallback_t& callback)
+    int Connector<Derived>::connect(IOLoop* loop, const Address& addr, const ConnectCallback_t& callback, const std::string& device)
     {
         int fd = SockUtil::create();
         if(fd < 0)
@@ -26,6 +26,11 @@ namespace tnet
             return fd;    
         } 
         
+        if(!device.empty())
+        {
+            SockUtil::bindDevice(fd, device);
+        }
+
         ConnectionPtr_t conn = std::make_shared<Connection>(loop, fd);
         
         m_conn = conn;

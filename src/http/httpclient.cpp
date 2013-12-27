@@ -145,7 +145,8 @@ namespace tnet
         else
         {
             conn = std::make_shared<HttpConnector>();
-            conn->connect(m_loop, addr, std::bind(&HttpClient::onConnect, shared_from_this(), _1, _2, request.dump(), callback));
+
+            conn->connect(m_loop, addr, std::bind(&HttpClient::onConnect, shared_from_this(), _1, _2, request.dump(), callback), m_device);
         }
     }
 

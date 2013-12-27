@@ -10,6 +10,8 @@
 #include <assert.h>
 #include <netdb.h>
 #include <string.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
 
 #include "address.h"
 #include "log.h"
@@ -180,5 +182,32 @@ namespace tnet
 
         LOG_ERROR("getHostByName Error");
         return uint32_t(-1);
+    }
+
+    int SockUtil::bindDevice(int sockFd, const string& device)
+    {
+                
+        struct ifreq ifr;
+        memset(&ifr, 0, sizeof(ifr));
+
+        snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), device.c_str());
+        struct sockaddr_in *sin=(struct sockaddr_in*)&ifr.ifr_addr;
+
+        if(ioctl(sockFd, SIOCGIFADDR, &ifr) < 0)
+        {
+            LOG_ERROR("ioctl get addr error %s", errorMsg(errno));
+            return -1;
+        }
+
+        sin->sin_family = AF_INET;
+        sin->sin_port = 0;
+
+        if(bind(sockFd, (struct sockaddr*)sin, sizeof(*sin)) < 0)
+        {
+            LOG_ERROR("bind interface error %s", errorMsg(errno));
+            return -1;
+        } 
+
+        return 0;
     }
 }

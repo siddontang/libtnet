@@ -34,7 +34,7 @@ void onTimeout(const TimingWheelPtr_t& wheel, const WeakHttpConnectionPtr_t& con
     if(c)
     {
         c->send(200);
-    }
+    } 
 }
 
 void onHandler(const HttpConnectionPtr_t& conn, const HttpRequest& request)

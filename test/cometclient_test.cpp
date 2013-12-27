@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <stdlib.h>
+#include <vector>
 
 #include "log.h"
 #include "timingwheel.h"
@@ -37,24 +38,45 @@ void request(const TimingWheelPtr_t& wheel, const HttpClientPtr_t& client, int n
 int main(int argc, char* args[])
 {
     Log::rootLog().setLevel(Log::ERROR);
+  
+    if(argc < 2)
+    {
+        cout << "args: num [eth0]" << endl;
+    }
+
+    int num = num = atoi(args[1]);
+
+    vector<HttpClientPtr_t> clients;
+
+    IOLoop loop;
     
-    int num = 60000;
     if(argc == 2)
     {
-        num = atoi(args[1]);
+        clients.push_back(std::make_shared<HttpClient>(&loop));
     }
-        
-    cout << "request num:" << num << endl;
-    
-    IOLoop loop;
+    else
+    {
+        for(int i = 0; i < argc - 2; ++i)
+        {
+            HttpClientPtr_t client = std::make_shared<HttpClient>(&loop);
+            client->bindDevice(args[i + 2]);
+            clients.push_back(client);
+        }
+    }
 
-    HttpClientPtr_t client = std::make_shared<HttpClient>(&loop);
+    cout << "request num:" << num << endl;
+
+
     TimingWheelPtr_t wheel = std::make_shared<TimingWheel>(1000, 3600);
 
-    for(int i = 0; i < 60; ++i)
+    int c = 60 * clients.size();
+    for(int i = 0; i < c; ++i)
     {
-        int reqNum = num / 60;
-        wheel->add(std::bind(&request, _1, client, reqNum), i * 1000);
+        int reqNum = num / c;
+        for(auto it = clients.begin(); it != clients.end(); ++it)
+        {
+            wheel->add(std::bind(&request, _1, *it, reqNum), i * 1000);
+        }
     }
 
     wheel->start(&loop);

@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <assert.h>
+#include <time.h>
 
 #include "address.h"
 #include "sockutil.h"
@@ -16,11 +17,14 @@
 #include "signaler.h"
 #include "timer.h"
 #include "process.h"
+#include "timingwheel.h"
 
 using namespace std;
 
 namespace tnet
 {
+    const int defaultIdleTimeout = 120;
+
     void dummyRunCallback(IOLoop*)
     {
     }
@@ -32,6 +36,8 @@ namespace tnet
     
         m_running = false;
     
+        m_maxIdleTimeout = defaultIdleTimeout;
+
         m_runCallback = std::bind(&dummyRunCallback, _1);
     }
  
@@ -86,6 +92,10 @@ namespace tnet
         
         m_signaler->start(m_loop);
 
+        m_idleWheel = std::make_shared<TimingWheel>(1000, 3600);
+
+        m_idleWheel->start(m_loop);
+
         m_runCallback(m_loop);
     }
 
@@ -111,6 +121,8 @@ namespace tnet
 
         m_running = false;
 
+        m_idleWheel->stop();
+
         m_signaler->stop();
         
         for_each_all(m_acceptors, std::bind(&Acceptor::stop, _1));
@@ -134,7 +146,33 @@ namespace tnet
 
         conn->onEstablished();
 
+        //check interval is (maxIdleTimeout * 9 / 10) * 1000
+        m_idleWheel->add(std::bind(&TcpServer::onIdleConnCheck, this, _1, WeakConnectionPtr_t(conn)), m_maxIdleTimeout * 900);
+
         return;
+    }
+
+    void TcpServer::onIdleConnCheck(const TimingWheelPtr_t& wheel, const WeakConnectionPtr_t& conn)
+    {
+        ConnectionPtr_t c = conn.lock();
+        if(!c)
+        {
+            return;
+        }        
+    
+        struct timespec t;
+        clock_gettime(CLOCK_MONOTONIC, &t);
+        uint64_t now = t.tv_sec;
+
+        if(now - c->lastActiveTime() > (uint64_t)m_maxIdleTimeout)
+        {
+            LOG_INFO("timeout, force shutdown");
+            c->shutDown();
+        }
+        else
+        { 
+            m_idleWheel->add(std::bind(&TcpServer::onIdleConnCheck, this, _1, WeakConnectionPtr_t(c)), m_maxIdleTimeout * 900);
+        }
     }
 
     void TcpServer::onSignal(const SignalerPtr_t& signaler, int signum)

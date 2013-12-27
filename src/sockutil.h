@@ -24,6 +24,8 @@ namespace tnet
         static int getSockError(int sockFd);
 
         static uint32_t getHostByName(const std::string& host);    
+
+        static int bindDevice(int sockFd, const std::string& device);
     };
 
 }
