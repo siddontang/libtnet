@@ -94,6 +94,8 @@ namespace tnet
 
     typedef std::function<void (const HttpResponse&)> ResponseCallback_t;
 
+    typedef std::function<HttpError (const HttpRequest&)> AuthCallback_t;
+
     struct CaseKeyCmp
     {
         bool operator() (const std::string& p1, const std::string& p2) const

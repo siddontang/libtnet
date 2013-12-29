@@ -26,10 +26,10 @@ namespace tnet
         conn->send(resp);      
     } 
 
+
     HttpServer::HttpServer(TcpServer* server)
         : m_server(server)
     {
-        m_httpCallbacks[rootPath] = std::bind(&httpNotFoundCallback, _1, _2);
     }
    
     HttpServer::~HttpServer()
@@ -69,11 +69,45 @@ namespace tnet
     {
         m_wsCallbacks[path] = callback;    
     }
-    
+
+    void HttpServer::setHttpCallback(const string& path, const HttpCallback_t& callback, const AuthCallback_t& auth)
+    {
+        setHttpCallback(path, callback);
+
+        m_authCallbacks[path] = auth;
+    }
+
+    void HttpServer::setWsCallback(const string& path, const WsCallback_t& callback, const AuthCallback_t& auth)
+    {
+        setWsCallback(path, callback);
+
+        m_authCallbacks[path] = auth;
+    }
+
     void HttpServer::onError(const HttpConnectionPtr_t& conn, const HttpError& error)
     {
         conn->send(error.statusCode, error.message); 
         conn->shutDown(1000);
+    }
+
+    bool HttpServer::authRequest(const HttpConnectionPtr_t& conn, const HttpRequest& request)
+    {
+        auto it = m_authCallbacks.find(request.path);
+        if(it == m_authCallbacks.end())
+        {
+            return true;
+        }
+
+        HttpError err = (it->second)(request);
+        if(err.statusCode != 200)
+        {
+            onError(conn, err);
+            return false;
+        } 
+        else
+        {
+            return true;
+        }
     }
 
     void HttpServer::onRequest(const HttpConnectionPtr_t& conn, const HttpRequest& request, RequestEvent event, const void* context)
@@ -91,13 +125,15 @@ namespace tnet
                     map<string, HttpCallback_t>::iterator iter = m_httpCallbacks.find(request.path);
                     if(iter == m_httpCallbacks.end())
                     {
-                        m_httpCallbacks[rootPath](conn, request);  
+                        httpNotFoundCallback(conn, request); 
                     }
                     else
                     {
-                        (iter->second)(conn, request);    
+                        if(authRequest(conn, request))
+                        { 
+                            (iter->second)(conn, request);    
+                        }
                     }
-    
                 }
                 break;
             default:
@@ -116,6 +152,11 @@ namespace tnet
         }
         else
         {
+            if(!authRequest(conn, request))
+            {
+                return;
+            }
+
             const StackBuffer* buffer = (const StackBuffer*)context;
 
             ConnectionPtr_t c = conn->lockConn();
