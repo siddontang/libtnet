@@ -12,12 +12,13 @@ namespace tnet
     {
     public:
         Connector();
+        Connector(const std::string& device);
         ~Connector();
         
         typedef std::shared_ptr<Derived> DerivedPtr_t;
         typedef std::function<void (const DerivedPtr_t& conn, bool connected)> ConnectCallback_t;
          
-        int connect(IOLoop* loop, const Address& addr, const ConnectCallback_t& callback);
+        int connect(IOLoop* loop, const Address& addr, const ConnectCallback_t& callback, const std::string& device = "");
        
         WeakConnectionPtr_t getConn() { return m_conn; } 
         ConnectionPtr_t lockConn() { return m_conn.lock(); }

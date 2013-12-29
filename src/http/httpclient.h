@@ -19,7 +19,9 @@ namespace tnet
     public:
         HttpClient(IOLoop* loop, int maxClients = 10);
         ~HttpClient();
-    
+
+        void bindDevice(const std::string& device) { m_device = device; }
+
         //now only support ip:port    
         void request(const std::string& url, const ResponseCallback_t& callback, enum http_method method = HTTP_GET);
         void request(const std::string& url, const Headers_t& headers, const ResponseCallback_t& callback, enum http_method method = HTTP_GET); 
@@ -42,6 +44,8 @@ namespace tnet
         int m_maxClients;
         typedef std::multimap<uint32_t, WeakHttpConnectorPtr_t> IpConn_t;
         IpConn_t m_conns;
+    
+        std::string m_device;
     };
         
 }

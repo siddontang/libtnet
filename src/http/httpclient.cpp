@@ -116,13 +116,17 @@ namespace tnet
     }
 
     void HttpClient::onResponse(const HttpConnectorPtr_t& conn, const HttpResponse& response, ResponseEvent event, const ResponseCallback_t& callback)
-    {
-        callback(response);
-        
+    { 
+        //add refer
+        HttpConnectorPtr_t c = conn->shared_from_this();
+        auto cb = std::move(callback);
+
         if(event == Response_Complete)
         {
             pushConn(conn);
         }
+        
+        cb(response);
     }
 
     void HttpClient::request(HttpRequest& request, const ResponseCallback_t& callback)
@@ -141,7 +145,8 @@ namespace tnet
         else
         {
             conn = std::make_shared<HttpConnector>();
-            conn->connect(m_loop, addr, std::bind(&HttpClient::onConnect, shared_from_this(), _1, _2, request.dump(), callback));
+
+            conn->connect(m_loop, addr, std::bind(&HttpClient::onConnect, shared_from_this(), _1, _2, request.dump(), callback), m_device);
         }
     }
 

@@ -143,7 +143,7 @@ namespace tnet
                 m_eventSize = MaxEventSize;    
             }            
 
-            m_events = (struct epoll_event*)realloc(m_events, m_eventSize);
+            m_events = (struct epoll_event*)realloc(m_events, sizeof(struct epoll_event) * m_eventSize);
         }
 
         return ret;
