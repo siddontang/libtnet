@@ -14,7 +14,7 @@
 using namespace std;
 using namespace tnet;
 
-string url = "http://10.20.189.246:11181/";
+string url = "http://10.20.187.120:11181/";
 
 void onResponse(const HttpClientPtr_t& client, const HttpResponse& resp)
 {

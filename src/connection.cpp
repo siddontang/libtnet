@@ -146,7 +146,7 @@ namespace tnet
         else
         {
             ConnectionPtr_t conn = shared_from_this();
-            m_loop->runAfter(after, std::bind(&Connection::handleClose, conn));    
+            m_loop->runInWheel(after, std::bind(&Connection::handleClose, conn));    
         }
     }
 

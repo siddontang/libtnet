@@ -29,6 +29,11 @@ namespace tnet
         //this only thread safe
         void addCallback(const Callback_t& callback);
 
+        //timeout is milliseconds
+        //wheel max timeout is 3600 * 1000
+        //wheel interval is 1000
+        void runInWheel(int timeout, const TimingWheelHandler_t& handler);
+
     private:
         void run();
 
@@ -49,6 +54,8 @@ namespace tnet
         SpinLock m_lock;
    
         NotifierPtr_t m_notifier;
+
+        TimingWheelPtr_t m_wheel;
     };
     
 }

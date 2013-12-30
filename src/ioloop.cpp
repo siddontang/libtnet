@@ -10,6 +10,7 @@
 #include "ioevent.h"
 #include "timer.h"
 #include "notifier.h"
+#include "timingwheel.h"
 
 using namespace std;
 
@@ -37,6 +38,8 @@ namespace tnet
          
         m_notifier = std::make_shared<Notifier>(std::bind(&IOLoop::onWake, this, _1));
         
+        m_wheel = std::make_shared<TimingWheel>(1000, 3600);
+
         m_events.resize(DefaultEventsCapacity, 0);
     }
     
@@ -53,6 +56,8 @@ namespace tnet
         m_running = true;
 
         m_notifier->start(this);
+
+        m_wheel->start(this);
 
         run();
     }
@@ -182,4 +187,9 @@ namespace tnet
     {
         //only to wakeup poll    
     }
+
+    void IOLoop::runInWheel(int timeout, const TimingWheelHandler_t& handler)
+    {
+        m_wheel->add(handler, timeout); 
+    } 
 }

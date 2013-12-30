@@ -81,6 +81,7 @@ namespace tnet
     {
         if(timeout >= m_maxTimeout)
         {
+            LOG_ERROR("timeout %d > max %d", timeout, m_maxTimeout);
             return (uint64_t)(-1);
         }
 
