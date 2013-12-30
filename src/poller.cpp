@@ -54,11 +54,8 @@ namespace tnet
         int ret = epoll_ctl(m_fd, EPOLL_CTL_ADD, fd, &event);
         if(ret < 0)
         {
-            if(errno != EEXIST)
-            {
-                LOG_ERROR("epoll_ctl add error %s", errorMsg(errno));
-                return -1;
-            }    
+            LOG_ERROR("epoll_ctl add error %s", errorMsg(errno));
+            return -1;
         }
 
         return 0;
@@ -89,8 +86,8 @@ namespace tnet
     int Poller::remove(int fd)
     {
         assert(m_fd > 0);    
-    
-        int ret = epoll_ctl(m_fd ,EPOLL_CTL_DEL, fd, NULL);
+
+        int ret = epoll_ctl(m_fd ,EPOLL_CTL_DEL, fd, 0);
         if(ret < 0)
         {
             LOG_ERROR("epoll_ctl remove error %s", errorMsg(errno));
@@ -116,10 +113,18 @@ namespace tnet
             struct epoll_event* ev = m_events + i;
             int fd = ev->data.fd;
             int got = (ev->events & (EPOLLOUT | EPOLLERR | EPOLLHUP) ? TNET_WRITE : 0)
-                    | (ev->events & (EPOLLIN | EPOLLERR | EPOLLHUP) ? TNET_READ : 0);
-            
+                    | (ev->events & (EPOLLIN | EPOLLERR | EPOLLHUP | EPOLLRDHUP) ? TNET_READ : 0);
+
             IOEvent* io = fd < events.size() ? events[fd] : 0;
-            int want = io ? io->events : TNET_NONE;
+            
+            if(!io)
+            {
+                //may occur event cache problem, see man 7 epoll
+                continue;
+            }
+            
+            //int want = io ? io->events : TNET_NONE;
+            int want = io->events;
 
             if(got & ~want)
             {
@@ -127,7 +132,7 @@ namespace tnet
                            | (want & TNET_WRITE ? EPOLLOUT : 0);
                 if(epoll_ctl(m_fd, want ? EPOLL_CTL_MOD : EPOLL_CTL_DEL, fd, ev) < 0)
                 { 
-                    LOG_ERROR("ctl error %s", errorMsg(errno));
+                    LOG_ERROR("ctl error %s got:%d, want:%d, fd:%d", errorMsg(errno), got, want, fd);
                     continue;
                 }
             }

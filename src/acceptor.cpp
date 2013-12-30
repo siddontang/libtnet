@@ -91,10 +91,10 @@ namespace tnet
         int sockFd = accept4(m_sockFd, NULL, NULL, SOCK_NONBLOCK | SOCK_CLOEXEC);
         if(sockFd < 0)
         {
-            LOG_INFO("accept error");
             int err = errno;
             if(err == EMFILE || err == ENFILE)
             {
+                LOG_ERROR("accept error %s", errorMsg(err));
                 close(m_dummyFd);
                 sockFd = accept(m_sockFd, NULL, NULL);
                 close(sockFd);

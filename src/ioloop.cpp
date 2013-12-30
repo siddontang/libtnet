@@ -118,6 +118,8 @@ namespace tnet
             return -1;
         }
 
+        m_events[fd]->events = events;
+
         return 0;
     }
 
