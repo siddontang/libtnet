@@ -40,15 +40,8 @@ namespace tnet
     
         int m_nextBucket;
         
-        class TimingChan 
-        {
-        public:
-            TimingChan() {id = 0;}
-            uint32_t id;
-            std::map<uint32_t, TimingWheelHandler_t> chans;
-        };
-
-        typedef std::vector<TimingChan> Buckets_t;
+        typedef std::vector<TimingWheelHandler_t> TimingChan_t;
+        typedef std::vector<TimingChan_t> Buckets_t;
 
         Buckets_t m_buckets;
     }; 

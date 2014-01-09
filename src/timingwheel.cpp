@@ -7,6 +7,10 @@ using namespace std;
 
 namespace tnet 
 {
+    void dummyHandler(const TimingWheelPtr_t&)
+    {
+    
+    }
 
     TimingWheel::TimingWheel(int interval, int maxBuckets)
         : m_loop(0)
@@ -56,19 +60,15 @@ namespace tnet
     {
         int index = m_nextBucket;
 
-        auto& chans = m_buckets[index].chans;
+        auto& chans = m_buckets[index];
         for(auto iter = chans.begin(); iter != chans.end(); ++iter)
         {
-            (iter->second)(shared_from_this());
+            (*iter)(shared_from_this());
         }
 
         chans.clear();
 
-        m_nextBucket += 1;
-        if(m_nextBucket >= m_maxBuckets) 
-        {
-            m_nextBucket = 0;
-        }  
+        m_nextBucket = (m_nextBucket + 1) % m_maxBuckets;
     }
 
     union Slot
@@ -86,9 +86,9 @@ namespace tnet
         }
 
         uint32_t bucket = (m_nextBucket + timeout / m_interval) % m_maxBuckets;
-        uint32_t id = m_buckets[bucket].id++;
+        uint32_t id = uint32_t(m_buckets[bucket].size());
     
-        m_buckets[bucket].chans[id] = handler;
+        m_buckets[bucket].push_back(handler);
    
         Slot u;
         u.p[0] = bucket;
@@ -109,15 +109,14 @@ namespace tnet
             return (uint64_t)-1;
         }
 
-        auto chans = m_buckets[bucket].chans;
-        auto iter = chans.find(id);
-        if(iter == chans.end())
+        auto& chans = m_buckets[bucket];
+        if(id >= uint32_t(chans.size())) 
         {
             return (uint64_t)-1;
         }
     
-        auto&& cb = std::move(iter->second);
-        chans.erase(iter);
+        auto&& cb = std::move(chans[id]);
+        chans[id] = std::bind(&dummyHandler, _1);
 
         return add(cb, timeout);
     }
@@ -135,8 +134,15 @@ namespace tnet
             return;
         }
 
-        auto chans = m_buckets[bucket].chans;
-        chans.erase(id);
+        auto& chans = m_buckets[bucket];
+        
+        if(id >= uint32_t(chans.size()))
+        {
+            return;
+        }
+
+        chans[id] = std::bind(&dummyHandler, _1);
+        
         return;
     }
 }
