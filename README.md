@@ -27,6 +27,6 @@ go to root source, then
 please see [wiki](https://github.com/siddontang/libtnet/wiki) for more information. If you have any problem when using libtnet, you can contact me through below.
 
 - Gmail: siddontang@gmail.com
-- QQ: 335498184
+- Twitter: siddontang
 
 I thank you very much for your feedback!
